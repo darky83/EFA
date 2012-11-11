@@ -1,6 +1,6 @@
 #!/bin/bash
 # +---------------------------------------------------+
-# EFA build script v 0.3-20121101
+# EFA build script v 0.3-20121111
 # 
 # Written by Arno Haverlach
 # Email arno@troublenow.org
@@ -283,7 +283,7 @@ rm /etc/rc2.d/S17baruwa
 # +---------------------------------------------------+
 # Install & Configure DCC
 cd /usr/src
-wget http://www.efa-project.org/build/$VERSION/dcc.tar.Z
+wget http://www.efa-project.org/build/$VERSION/install/dcc.tar.Z
 tar xvzf dcc.tar.Z
 cd dcc-1.3.143/
 ./configure
@@ -302,7 +302,7 @@ chown postfix:postfix /var/dcc
 sed -i "s/#loadplugin Mail::SpamAssassin::Plugin::DCC/loadplugin Mail::SpamAssassin::Plugin::DCC/g" /etc/spamassassin/v310.pre
 sed -i "s/# loadplugin Mail::SpamAssassin::Plugin::RelayCountry/loadplugin Mail::SpamAssassin::Plugin::RelayCountry/g" /etc/spamassassin/init.pre
 cd /etc/init.d
-wget http://www.efa-project.org/build/$VERSION/DCC.efa.init.d -O DCC
+wget http://www.efa-project.org/build/$VERSION/etc/init.d/DCC
 chmod 755 /etc/init.d/DCC
 # +---------------------------------------------------+
 
@@ -329,9 +329,9 @@ echo "42 * * * * /usr/sbin/update_virus_scanners >> /dev/null" >> /etc/cron.d/ef
 # Write specific EFA files
 echo "EFA-$VERSION" >> /etc/EFA-version
 cd /usr/local/sbin
-wget http://www.efa-project.org/build/$VERSION/EFA-Configure
+wget http://www.efa-project.org/build/$VERSION/usr/local/sbin/EFA-Configure
 chmod 700 EFA-Configure
-wget http://www.efa-project.org/build/$VERSION/EFA-Update
+wget http://www.efa-project.org/build/$VERSION/usr/local/sbin/EFA-Update
 chmod 700 EFA-Update
 mkdir /var/EFA
 mkdir /var/EFA/update
@@ -351,7 +351,7 @@ sed -i '1i\\/usr\/local\/sbin\/EFA-Configure' /root/.bashrc
 # +---------------------------------------------------+
 # Monthly check for update
 cd /etc/cron.monthly
-wget http://www.efa-project.org/build/$VERSION/EFA-Monthly-cron
+wget http://www.efa-project.org/build/$VERSION/etc/cron.monthly/EFA-Monthly-cron
 chmod 700 EFA-Monthly-cron
 # +---------------------------------------------------+
 
