@@ -1,0 +1,388 @@
+#!/bin/bash
+# +---------------------------------------------------+
+# EFA build script v 0.2-20121016
+# 
+# Written by Arno Haverlach
+# Email arno@troublenow.org
+#
+# This creates the base for EFA.
+# +---------------------------------------------------+
+# Todo
+# - Create initial configure script
+#
+# +---------------------------------------------------+
+# STAGE 0 (Pre requirements for barebone install)
+# +---------------------------------------------------+
+# - Configure Hardware
+# - Install Debian minimal with following disk layout
+#     / 		( 6GB)
+#     /tmp 		( 1GB)
+#     /var		(12GB)
+#     /var/spool	(60GB)
+#     swap		( 1GB)
+# - Set /tmp "noexec,nosuid" in /etc/fstab
+# - Configure IP settings
+# - Create user efaadmin
+#
+# Firewall ports needed
+# TCP 25 out (mail)
+# UDP 24441 out (pyzor)
+# UDP 6277 out (DCC)
+# TCP 2703 out (Razor)
+#
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++
+# STAGE 1 System setup
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++
+VERSION="0.2"
+
+# Apt settings for noexec /tmp dir
+echo 'DPkg:Pre-Invoke{"mount -o remount,exec /tmp";};' >> /etc/apt/apt.conf
+echo 'DPkg:Post-Invoke {"mount -o remount /tmp";};' >> /etc/apt/apt.conf
+
+# Stop unneeded services
+update-rc.d -f mpt-statusd remove
+update-rc.d -f nfs-common remove
+update-rc.d -f exim4 remove
+update-rc.d -f portmap remove
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++
+# STAGE 2 Installation
+# +++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+# +---------------------------------------------------+
+# Install needed packages
+# When asked for postfix configuration choose: Internet Site
+# System mail name: name.domain.ext
+# mysql root password: password
+apt-get update
+apt-get -y install unrar-free vim screen htop ssh ntp mysql-server apache2 postfix postfix-mysql rabbitmq-server pyzor razor sudo postfix-policyd-spf-perl
+# +---------------------------------------------------+
+
+# +---------------------------------------------------+
+# Basic config of rabbitMQ
+sed -i '/^# Default-Start:/ c\# Default-Start: 2 3 4 5' /etc/init.d/rabbitmq-server
+sed -i '/^# Default-Stop:/ c\# Default-Stop: 0 1 6' /etc/init.d/rabbitmq-server
+update-rc.d rabbitmq-server defaults
+rabbitmqctl add_user baruwa password
+rabbitmqctl add_vhost baruwa
+rabbitmqctl set_permissions -p baruwa baruwa ".*" ".*" ".*"
+rabbitmqctl delete_user guest
+# +---------------------------------------------------+
+
+# +---------------------------------------------------+
+# Install baruwa
+wget -O - http://apt.baruwa.org/baruwa-apt-keys.gpg | apt-key add -
+echo "deb http://apt.baruwa.org/debian squeeze main" >> /etc/apt/sources.list.d/baruwa.list
+apt-get update
+# Webserver to configure: apache2
+# virtual host name: localhost.localdomain
+# Configure MySQL: Yes
+# Mysql Host: localhost
+# database administrator username: root
+# database administrator password: password
+# database user for baruwa: baruwa
+# database user password: password
+# baruwa database name: baruwa
+# rabbitMQ host: localhost
+# rabbitmq vhost: baruwa
+# rabbitmq user for baruwa: baruwa
+# rabbitmq user password: password
+# admin user for baruwa: baruwaadmin
+# baruwa admin user password: password
+# admin users meail adres: root
+# Delete database on purge: yes
+# Configure MySQL: yes
+
+apt-get -y install baruwa
+baruwa-admin syncdb --noinput
+for name in $(echo "accounts messages lists reports status fixups config"); do
+ baruwa-admin migrate $name;
+done
+# +---------------------------------------------------+
+
+
+# +---------------------------------------------------+
+# Configure permissions
+mkdir /var/spool/MailScanner/spamassassin
+chown -R postfix:postfix /var/spool/MailScanner/incoming
+chmod -R 770 /var/spool/MailScanner/incoming
+chmod -R 775 /var/spool/MailScanner/quarantine
+chmod -R 775 /var/spool/MailScanner
+# +---------------------------------------------------+
+
+# +---------------------------------------------------+
+# Configure MailScanner
+cp /etc/MailScanner/MailScanner.conf /etc/MailScanner/MailScanner.conf.dist
+sed -i '/^Run As User/ c\Run As User = postfix' /etc/MailScanner/MailScanner.conf
+sed -i '/^Run As Group/ c\Run As Group = postfix' /etc/MailScanner/MailScanner.conf
+sed -i '/^Incoming Queue Dir/ c\Incoming Queue Dir = \/var\/spool\/postfix\/hold' /etc/MailScanner/MailScanner.conf
+sed -i '/^Outgoing Queue Dir/ c\Outgoing Queue Dir = \/var\/spool\/postfix\/incoming' /etc/MailScanner/MailScanner.conf
+# Names
+sed -i '/^%org-name% =/ c\%org-name% = EFA' /etc/MailScanner/MailScanner.conf
+sed -i '/^%org-long-name% =/ c\%org-long-name% = EFA-Project' /etc/MailScanner/MailScanner.conf
+sed -i '/^%web-site% =/ c\%web-site% = www.efa-project.org' /etc/MailScanner/MailScanner.conf
+sed -i 's/X-%org-name%-MailScanner/X-%org-name%-MailScanner/g' /etc/MailScanner/MailScanner.conf
+# Use Postfix
+sed -i '/^MTA = / c\MTA = postfix' /etc/MailScanner/MailScanner.conf
+# System settings
+sed -i '/^Max Children =/ c\Max Children = 2' /etc/MailScanner/MailScanner.conf
+sed -i '/^Log Spam =/ c\Log Spam = yes' /etc/MailScanner/MailScanner.conf
+sed -i '/^Log Silent Viruses =/ c\Log Silent Viruses = yes' /etc/MailScanner/MailScanner.conf
+sed -i '/^Log Dangerous HTML Tags =/ c\Log Dangerous HTML Tags = yes' /etc/MailScanner/MailScanner.conf
+sed -i '/^Detailed Spam Report =/ c\Detailed Spam Report = yes' /etc/MailScanner/MailScanner.conf
+# ClamAV Settings
+sed -i '/^Virus Scanners / c\Virus Scanners = clamd' /etc/MailScanner/MailScanner.conf
+sed -i '/^Clamd Socket =/ c\Clamd Socket = /var/run/clamav/clamd.ctl' /etc/MailScanner/MailScanner.conf
+# SpamAssassin Settings
+sed -i '/^SpamAssassin User State Dir/ c\SpamAssassin User State Dir  = /var/spool/MailScanner/spamassassin' /etc/MailScanner/MailScanner.conf
+sed -i '/^Include Scores In SpamAssassin Report =/ c\Include Scores In SpamAssassin Report = yes' /etc/MailScanner/MailScanner.conf
+#sed -i '/^Incoming Work Group =/ c\Incoming Work Group = clamav' /etc/MailScanner/MailScanner.conf
+sed -i '/^Incoming Work Permissions/ c\Incoming Work Permissions = 0644' /etc/MailScanner/MailScanner.conf
+# Quarantine Settings
+sed -i '/^Quarantine User =/ c\Quarantine User = postfix' /etc/MailScanner/MailScanner.conf
+sed -i '/^Quarantine User =/ c\Quarantine User = postfix' /etc/MailScanner/conf.d/baruwa.conf
+sed -i '/^Quarantine Group =/ c\Quarantine Group = celeryd' /etc/MailScanner/MailScanner.conf
+sed -i '/^Quarantine Permissions =/ c\Quarantine Permissions = 0660' /etc/MailScanner/MailScanner.conf
+sed -i '/^Quarantine Whole Message =/ c\Quarantine Whole Message = yes' /etc/MailScanner/MailScanner.conf
+sed -i '/^Quarantine Infections =/ c\Quarantine Infections = no' /etc/MailScanner/MailScanner.conf
+sed -i '/^Deliver Unparsable TNEF =/ c\Deliver Unparsable TNEF = yes' /etc/MailScanner/MailScanner.conf
+sed -i '/^Maximum Archive Depth =/ c\Maximum Archive Depth = 0' /etc/MailScanner/MailScanner.conf
+sed -i '/^Keep Spam And MCP Archive Clean =/ c\Keep Spam And MCP Archive Clean = yes' /etc/MailScanner/MailScanner.conf
+sed -i '/^Required SpamAssassin Score =/ c\Required SpamAssassin Score = 4' /etc/MailScanner/MailScanner.conf
+sed -i '/^Spam Actions =/ c\Spam Actions = store notify' /etc/MailScanner/MailScanner.conf
+sed -i '/^High Scoring Spam Actions =/ c\High Scoring Spam Actions = store' /etc/MailScanner/MailScanner.conf
+sed -i '/^Non Spam Actions =/ c\Non Spam Actions = store deliver header "X-Spam-Status: No"' /etc/MailScanner/MailScanner.conf
+sed -i '/^SpamAssassin Local State Dir =/ c\SpamAssassin Local State Dir = /var/lib/spamassassin' /etc/MailScanner/MailScanner.conf
+
+sed -i '/^Sign Clean Messages / c\Sign Clean Messages = no' /etc/MailScanner/MailScanner.conf
+sed -i '/^Sign Clean Messages / c\Sign Clean Messages = no' /etc/MailScanner/conf.d/baruwa.conf
+
+# Fix debian bug
+sed -i '/^#!\/usr\/bin\/perl -I\/usr\/share\/MailScanner/ c\#!\/usr\/bin\/perl -I\/usr\/share\/MailScanner\ -U' /usr/sbin/MailScanner
+
+# finally enable mailscanner
+sed -i '/^#run_mailscanner=1/ c\run_mailscanner=1' /etc/default/mailscanner
+# +---------------------------------------------------+
+
+# +---------------------------------------------------+
+# Configure Spamasassin
+sed -i '/^envelope_sender_header / c\envelope_sender_header X-EFA-MailScanner-From' /etc/MailScanner/spam.assassin.prefs.conf
+sed -i '/^use_auto_whitelist 0/ c\#use_auto_whitelist 0' /etc/MailScanner/spam.assassin.prefs.conf
+
+sed -i '/^ENABLED=0/ c\ENABLED=1' /etc/default/spamassassin
+sa-update
+
+# +---------------------------------------------------+
+
+# +---------------------------------------------------+
+# Configure clamav
+usermod -g postfix clamav
+usermod -a -G clamav clamav
+# +---------------------------------------------------+
+
+# +---------------------------------------------------+
+# Configure Pyzor
+# +---------------------------------------------------+
+mkdir /var/spool/postfix/.pyzor
+chown postfix:postfix /var/spool/postfix/.pyzor
+
+# workaround the debian deprication message..
+sed -i '/^#!\/usr\/bin\/python/ c\#!\/usr\/bin\/python -Wignore::DeprecationWarning' /usr/bin/pyzor
+# +---------------------------------------------------+
+
+# +---------------------------------------------------+
+# Configure razor
+# +---------------------------------------------------+
+mkdir /root/.razor
+#razor-admin -d -create
+#razor-admin -register
+# +---------------------------------------------------+
+
+
+# +---------------------------------------------------+
+# Configure postfix
+chsh postfix -s /usr/sbin/nologin
+cp /etc/postfix/main.cf /etc/postfix/main.cf.dist
+postconf -e header_checks=regexp:/etc/postfix/header_checks
+echo '/^Received:/ HOLD' > /etc/postfix/header_checks
+postconf -e inet_interfaces=all
+postconf -e myhostname=`cat /etc/hostname`.efa-project.org
+postconf -e disable_vrfy_command=yes
+postconf -e smtpd_banner="$myhostname ESMTP EFA www.efa-project.org"
+postconf -e queue_directory=/var/spool/postfix
+postconf -e mail_owner=postfix
+postconf -e unknown_local_recipient_reject_code=550
+postconf -e local_transport="error:No local mail delivery"
+postconf -e smtpd_delay_reject="yes"
+postconf -e smtpd_recipient_limit="100"
+postconf -e smtpd_helo_required="yes"
+postconf -e message_size_limit=512000000
+postconf -e mailbox_size_limit=512000000
+postconf -e smtpd_client_restrictions="permit_sasl_authenticated"
+postconf -e smtpd_sender_restrictions="permit_sasl_authenticated, check_sender_access hash:/etc/postfix/sender_access, reject_non_fqdn_sender, reject_unknown_sender_domain"
+postconf -e smtpd_helo_restrictions="permit_sasl_authenticated check_helo_access hash:/etc/postfix/helo_access, reject_invalid_hostname"
+postconf -e smtpd_recipient_restrictions="permit_sasl_authenticated, reject_unknown_recipient_domain, reject_unauth_destination, whitelist_policy, rbl_policy, spf_policy"
+postconf -e smtpd_data_restrictions="permit_sasl_authenticated, reject_unauth_pipelining"
+postconf -e smtpd_restriction_classes="spf_policy, rbl_policy, whitelist_policy"
+postconf -e spf_policy="check_policy_service unix:private/policy"
+postconf -e rbl_policy="reject_rbl_client zen.spamhaus.org, reject_rbl_client bl.spamcop.net"
+postconf -e whitelist_policy="check_client_access mysql:/etc/postfix/mysql-global_lists.cf, check_sender_access mysql:/etc/postfix/mysql-global_lists.cf"
+postconf -e virtual_alias_maps=hash:/etc/postfix/virtual
+touch /etc/postfix/virtual
+postmap /etc/postfix/virtual
+touch /etc/postfix/sender_access
+postmap /etc/postfix/sender_access
+touch /etc/postfix/helo_access
+postmap /etc/postfix/helo_access
+
+echo "policy unix - n n - - spawn user=nobody argv=/usr/sbin/postfix-policyd-spf-perl" >> /etc/postfix/master.cf
+
+postconf -e relay_domains=mysql:/etc/postfix/mysql-relay_domains.cf
+echo "user = baruwa" >> /etc/postfix/mysql-relay_domains.cf
+echo "password = password" >> /etc/postfix/mysql-relay_domains.cf
+echo "dbname = baruwa" >> /etc/postfix/mysql-relay_domains.cf
+echo "query = SELECT address FROM user_addresses WHERE address='%s' AND enabled=1 AND address_type=1;" >> /etc/postfix/mysql-relay_domains.cf
+echo "hosts = 127.0.0.1" >> /etc/postfix/mysql-relay_domains.cf
+
+postconf -e transport_maps=mysql:/etc/postfix/mysql-transports.cf
+echo "user = baruwa" >> /etc/postfix/mysql-transports.cf
+echo "password = password" >> /etc/postfix/mysql-transports.cf
+echo "dbname = baruwa" >> /etc/postfix/mysql-transports.cf
+echo "query = SELECT CONCAT('smtp:[', mail_hosts.address, ']:', port) FROM mail_hosts, user_addresses WHERE user_addresses.address = '%s' AND user_addresses.id = mail_hosts.useraddress_id;" >> /etc/postfix/mysql-transports.cf
+echo "hosts = 127.0.0.1" >> /etc/postfix/mysql-transports.cf
+
+#postconf -e relay_recipient_maps=mysql:/etc/postfix/mysql-relay_recipients.cf
+echo "user = baruwa" >> /etc/postfix/mysql-relay_recipients.cf
+echo "password = password" >> /etc/postfix/mysql-relay_recipients.cf
+echo "dbname = baruwa" >> /etc/postfix/mysql-relay_recipients.cf
+echo "query = SELECT 1 FROM user_addresses WHERE address='%s' AND address_type=2 UNION SELECT 1 FROM auth_user WHERE username = '%s' OR email = '%s'; " >> /etc/postfix/mysql-relay_recipients.cf
+echo "hosts = 127.0.0.1" >> /etc/postfix/mysql-relay_recipients.cf
+
+echo "user = baruwa" >> /etc/postfix/mysql-global_lists.cf
+echo "password = password" >> /etc/postfix/mysql-global_lists.cf
+echo "dbname = baruwa" >> /etc/postfix/mysql-global_lists.cf
+echo "query = SELECT CONCAT('PERMIT') FROM lists WHERE from_address='%s' AND list_type=1 UNION SELECT CONCAT('REJECT') FROM lists WHERE from_address='%s' AND list_type=2; " >> /etc/postfix/mysql-global_lists.cf
+echo "hosts = 127.0.0.1" >> /etc/postfix/mysql-global_lists.cf
+# +---------------------------------------------------+
+
+# +---------------------------------------------------+
+# Configure Baruwa
+#baruwa-admin createsuperuser
+#baruwa-admin initconfig
+sed -i "/^#DEFAULT_FROM_EMAIL = / c\DEFAULT_FROM_EMAIL = 'postmaster@efa-project.org' " /etc/baruwa/settings.py
+sed -i "/^QUARANTINE_REPORT_HOSTURL = / c\QUARANTINE_REPORT_HOSTURL = 'http://`ifconfig eth0|grep "inet addr:"|awk '{print $2}'|awk -F : '{print $2}'`' " /etc/baruwa/settings.py
+update-rc.d baruwa defaults
+# Don't start yet we do this after config
+rm /etc/rc2.d/S17baruwa 
+# +---------------------------------------------------+
+
+# +---------------------------------------------------+
+# Install & Configure DCC
+cd /usr/src
+wget http://www.efa-project.org/build/$VERSION/dcc.tar.Z
+tar xvzf dcc.tar.Z
+cd dcc-1.3.143/
+./configure
+make
+make install
+
+# Configure DCC and run as daemon for better performance
+ln -s /var/dcc/libexec/cron-dccd /usr/bin/cron-dccd
+ln -s /var/dcc/libexec/cron-dccd /etc/cron.monthly/cron-dccd
+echo "dcc_home /var/dcc" >> /etc/MailScanner/spam.assassin.prefs.conf
+sed -i '/^dcc_path / c\dcc_path /usr/local/bin/dccproc' /etc/MailScanner/spam.assassin.prefs.conf
+sed -i '/^DCCIFD_ENABLE=/ c\DCCIFD_ENABLE=on' /var/dcc/dcc_conf
+sed -i '/^DBCLEAN_LOGDAYS=/ c\DBCLEAN_LOGDAYS=1' /var/dcc/dcc_conf
+sed -i '/^DCCIFD_LOGDIR=/ c\DCCIFD_LOGDIR="/var/dcc/log"' /var/dcc/dcc_conf
+chown postfix:postfix /var/dcc
+sed -i "s/#loadplugin Mail::SpamAssassin::Plugin::DCC/loadplugin Mail::SpamAssassin::Plugin::DCC/g" /etc/spamassassin/v310.pre
+sed -i "s/# loadplugin Mail::SpamAssassin::Plugin::RelayCountry/loadplugin Mail::SpamAssassin::Plugin::RelayCountry/g" /etc/spamassassin/init.pre
+cd /etc/init.d
+wget http://www.efa-project.org/build/$VERSION/DCC.efa.init.d -O DCC
+chmod 755 /etc/init.d/DCC
+# +---------------------------------------------------+
+
+# +---------------------------------------------------+
+# Configure apache
+a2dissite 000-default
+sed -i '/ServerName /d' /etc/apache2/sites-enabled/baruwa
+# +---------------------------------------------------+
+
+# +---------------------------------------------------+
+# Fix baruwa cron & set update cron's
+echo "# baruwa - 1.1.0" > /etc/cron.d/baruwa
+echo "#" >> /etc/cron.d/baruwa
+echo "# runs every 3 mins to update mailq stats" >> /etc/cron.d/baruwa
+echo "" >> /etc/cron.d/baruwa
+echo "*/3 * * * * root baruwa-admin queuestats >>/dev/null" >> /etc/cron.d/baruwa
+
+echo "37 5 * * * /usr/sbin/update_phishing_sites >> /dev/null" >> /etc/cron.d/efa
+echo "07 * * * * /usr/sbin/update_bad_phishing_emails >> /dev/null" >> /etc/cron.d/efa
+echo "42 * * * * /usr/sbin/update_virus_scanners >> /dev/null" >> /etc/cron.d/efa
+# +---------------------------------------------------+
+
+# +---------------------------------------------------+
+# Write specific EFA files
+echo "EFA-$VERSION" >> /etc/EFA-version
+cd /usr/local/sbin
+wget http://www.efa-project.org/build/$VERSION/EFA-Configure
+chmod 700 EFA-Configure
+wget http://www.efa-project.org/build/$VERSION/EFA-Update
+chmod 700 EFA-Update
+mkdir /var/EFA
+mkdir /var/EFA/update
+
+echo "" >> /etc/issue
+echo "--------------------------" >> /etc/issue
+echo "--- Welcome to EFA $VERSION ---" >> /etc/issue
+echo "--------------------------" >> /etc/issue
+echo "http://www.efa-project.org" >> /etc/issue
+echo "--------------------------" >> /etc/issue
+echo "" >> /etc/issue
+echo "First time login: root/password" >> /etc/issue
+
+# Set EFA-Configure to run at first root login:
+sed -i '1i\\/usr\/local\/sbin\/EFA-Configure' /root/.bashrc
+
+# +---------------------------------------------------+
+# Monthly check for update
+cd /etc/cron.monthly
+wget http://www.efa-project.org/build/$VERSION/EFA-Monthly-cron
+chmod 700 EFA-Monthly-cron
+# +---------------------------------------------------+
+
+# +---------------------------------------------------+
+# Secure SSH
+sed -i '/^PermitRootLogin/ c\PermitRootLogin no' /etc/ssh/sshd_config
+
+# Clean SSH keys (gererate at first boot)
+/bin/rm /etc/ssh/ssh_host_*
+# +---------------------------------------------------+
+
+# +---------------------------------------------------+
+# Disable all services untill we are configured
+update-rc.d apache2 disable
+update-rc.d rabbitmq-server disable
+update-rc.d mysql disable
+update-rc.d mailscanner disable
+update-rc.d spamassassin disable
+update-rc.d ssh disable
+update-rc.d clamav-freshclam disable
+update-rc.d postfix disable
+
+
+
+
+# +---------------------------------------------------+
+# Cleanup
+rm /var/cache/apt/archives/*
+echo "auto lo" > /etc/network/interfaces
+echo "iface lo inet loopback" >> /etc/network/interfaces
+echo " " >> /etc/network/interfaces
+echo "nameserver 8.8.8.8" > /etc/resolv.conf
+echo "127.0.0.1               localhost efa02" > /etc/hosts
+
+# +---------------------------------------------------+
+reboot
+#EOF
