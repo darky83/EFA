@@ -57,6 +57,8 @@ update-rc.d -f portmap remove
 # mysql root password: password
 apt-get update
 apt-get -y install unrar-free vim screen htop ssh ntp mysql-server apache2 postfix postfix-mysql rabbitmq-server pyzor razor sudo postfix-policyd-spf-perl
+dpkg -purge exim4 exim4-base exim4-config exim4-daemon-light
+apt-get remove popularity-contest
 # +---------------------------------------------------+
 
 # +---------------------------------------------------+

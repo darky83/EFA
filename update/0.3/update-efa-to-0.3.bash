@@ -17,6 +17,9 @@ echo "[EFA] Updating system packages"
 
 apt-get update
 apt-get -y upgrade
+
+dpkg -purge exim4 exim4-base exim4-config exim4-daemon-light
+apt-get remove popularity-contest
 # +---------------------------------------------------+
 
 # +---------------------------------------------------+
@@ -28,8 +31,8 @@ sed -i '/^Disarmed Modify Subject / c\Disarmed Modify Subject = no' /etc/MailSca
 # +---------------------------------------------------+
 echo "[EFA] Modifying Postfix settings"
 
-MYHOSTNAME="TODO TODO TODO TODO TODO"
-MYDOMAINNAME="TODO TODO TODO TODO TODO"
+MYHOSTNAME="`cat /etc/mailname | sed  's/\..*//'`"
+MYDOMAINNAME="`cat /etc/mailname | sed -n 's/[^.]*\.//p'`"
 postconf -e mydestination="$MYHOSTNAME.$MYDOMAINNAME, localhost.$MYDOMAINNAME ,localhost"
 # +---------------------------------------------------+
 
