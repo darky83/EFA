@@ -16,7 +16,8 @@ Current development version: 0.3
 - Postfix mydestination was not updated during configuration.
 - EFA-Update in 0.2 was the wrong version, correct version added to 0.3
   (Manual update will be needed from 0.2 to 0.3)
-
+- EFA-Configure is moved to EFA-Init (to be run once for initial config)
+- New EFA-Configure script to modify the system after inital config and to configure new features.
 
 #------------------------------------------#
 # 0.2

@@ -331,6 +331,8 @@ echo "42 * * * * /usr/sbin/update_virus_scanners >> /dev/null" >> /etc/cron.d/ef
 # Write specific EFA files
 echo "EFA-$VERSION" >> /etc/EFA-version
 cd /usr/local/sbin
+wget http://www.efa-project.org/build/$VERSION/usr/local/sbin/EFA-Init
+chmod 700 EFA-init
 wget http://www.efa-project.org/build/$VERSION/usr/local/sbin/EFA-Configure
 chmod 700 EFA-Configure
 wget http://www.efa-project.org/build/$VERSION/usr/local/sbin/EFA-Update
@@ -347,8 +349,8 @@ echo "--------------------------" >> /etc/issue
 echo "" >> /etc/issue
 echo "First time login: root/password" >> /etc/issue
 
-# Set EFA-Configure to run at first root login:
-sed -i '1i\\/usr\/local\/sbin\/EFA-Configure' /root/.bashrc
+# Set EFA-Init to run at first root login:
+sed -i '1i\\/usr\/local\/sbin\/EFA-Init' /root/.bashrc
 
 # +---------------------------------------------------+
 # Monthly check for update

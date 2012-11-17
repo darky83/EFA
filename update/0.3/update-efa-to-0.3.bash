@@ -39,12 +39,24 @@ postconf -e mydestination="$MYHOSTNAME.$MYDOMAINNAME, localhost.$MYDOMAINNAME ,l
 # +---------------------------------------------------+
 echo "[EFA] Updating E.F.A specific files"
 
+mkdir /var/EFA/update/0.3
+mkdir /var/EFA/update/0.3/backup
+
+# Update EFA-Init file
+cd /usr/local/sbin
+mv /usr/local/sbin/EFA-Init /var/EFA/update/0.3/backup/
+wget http://www.efa-project.org/build/0.3/usr/local/sbin/EFA-Init
+chmod 700 EFA-Init
+
 # Update EFA-Configure file
 cd /usr/local/sbin
+mv /usr/local/sbin/EFA-Configure /var/EFA/update/0.3/backup/
 wget http://www.efa-project.org/build/0.3/usr/local/sbin/EFA-Configure
 chmod 700 EFA-Configure
 
 # Update EFA-Update file
+cd /usr/local/sbin
+mv /usr/local/sbin/EFA-Update /var/EFA/update/0.3/backup/
 wget http://www.efa-project.org/build/0.3/usr/local/sbin/EFA-Update
 chmod 700 EFA-Update
 # +---------------------------------------------------+
