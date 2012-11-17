@@ -8,18 +8,91 @@
 # Option IP_SETTINGS
 # +---------------------------------------------------+
 opt_ip-settings(){
-	func_getipsettings
-	clear         
-    echo "----------------- E.F.A -----------------"
-    echo "-------------- IP SETTINGS --------------"
-    echo " "
-    echo "Current IP settings are:"
-    echo "IP:		$CUR_IP"
-	echo "Netmask:	$CUR_NM"
-	echo "Gateway:	$CUR_GW"
-	echo "Primary DNS:	$CUR_DNS1"
-	echo "Secondary DNS:	$CUR_DNS2"
-    pause
+	menu=0
+	ipmenu=1
+	while [ $ipmenu == "1" ]
+		do
+			func_getipsettings
+			clear         
+    		echo "----------------- E.F.A -----------------"
+    		echo "-------------- IP SETTINGS --------------"
+    		echo " "
+    		echo "Current IP settings are:"
+    		echo "1) IP:		$IP"
+			echo "2) Netmask:	$NM"
+			echo "3) Gateway:	$GW"
+			echo "4) Primary DNS:	$DNS1"
+			echo "5) Secondary DNS:	$DNS2"
+			echo ""
+			echo "e) Return to main menu"
+			echo ""
+			local choice
+			read -p "Enter setting you want to change: " choice
+			case $choice in
+    			1) 	ipmenu=0
+    				echo ""
+    				read -p "Enter your new IP: " IP
+    				func_setipsettings
+    				ipmenu=1
+    				;;
+        		2) ipmenu=0
+    				echo ""
+    				read -p "Enter your new netmask: " NM
+    				func_setipsettings
+    				ipmenu=1
+    				;;
+        		3) 	ipmenu=0
+    				echo ""
+    				read -p "Enter your new gateway: " GW
+    				func_setipsettings
+    				ipmenu=1
+    				;;
+        		4) 	ipmenu=0
+    				echo ""
+    				read -p "Enter your new primary DNS: " DNS1
+    				func_setipsettings
+    				ipmenu=1
+    				;;
+        		5) 	ipmenu=0
+    				echo ""
+    				read -p "Enter your new secondary DNS: " DNS2
+    				func_setipsettings
+    				ipmenu=1
+    				;;
+        		e) menu=1 && return ;;
+        		*) echo -e "Error \"$choice\" is not an option..." && sleep 2
+    		esac
+		done
+}
+# +---------------------------------------------------+
+
+# +---------------------------------------------------+
+# Function to set the new IP settings
+# +---------------------------------------------------+
+func_setipsettings(){
+for ip in $IP $NM $GW $DNS1 $DNS2
+	do
+		validcheck=1
+		while [ $validcheck != 0 ]
+			do
+    			if checkip $ip
+    				then
+    					echo "OK  $ip"
+    					validcheck=0
+    				else
+    					echo "ERROR: The value $ip seems to be invalid"
+    					pause
+    					return
+				fi
+			done
+	done
+echo ""
+echo $IP
+echo $NM
+echo $GW
+echo $DNS1
+echo $DNS2
+pause
 }
 # +---------------------------------------------------+
 
@@ -95,13 +168,13 @@ show_menus() {
     echo "Please select the item you want to modify"
     echo " "
     echo "+- System settings:"
-    echo "1. IP settings"
-    echo "2. Hostname"
+    echo "1) IP settings"
+    echo "2) Hostname"
     echo ""
 	echo "+- Mail related items:"
-    echo "3. Outbound mail relay"
-	echo "4. Outbound smarthost" 
-	echo "5. Admin Email address"
+    echo "3) Outbound mail relay"
+	echo "4) Outbound smarthost" 
+	echo "5) Admin Email address"
     echo " "       
     echo "e. Exit"
 }
@@ -136,14 +209,14 @@ pause(){
 # +---------------------------------------------------+
 
 # +---------------------------------------------------+
-# Function to grabb the current IP settings.
+# Function to grab the current IP settings.
 # +---------------------------------------------------+
 function func_getipsettings(){
-	CUR_IP="`cat /etc/network/interfaces | grep address | awk {' print $2 '}`"
-	CUR_NM="`cat /etc/network/interfaces | grep netmask | awk {' print $2 '}`"
-	CUR_GW="`cat /etc/network/interfaces | grep gateway | awk {' print $2 '}`"
-	CUR_DNS1="`awk 'NR==1 {print $2}' /etc/resolv.conf`"
-	CUR_DNS2="`awk 'NR==2 {print $2}' /etc/resolv.conf`"
+	IP="`cat /etc/network/interfaces | grep address | awk {' print $2 '}`"
+	NM="`cat /etc/network/interfaces | grep netmask | awk {' print $2 '}`"
+	GW="`cat /etc/network/interfaces | grep gateway | awk {' print $2 '}`"
+	DNS1="`cat /etc/resolv.conf  | grep nameserver | awk 'NR==1 {print $2}'`"
+	DNS2="`cat /etc/resolv.conf  | grep nameserver | awk 'NR==2 {print $2}'`"
 }
 # +---------------------------------------------------+
 
@@ -166,13 +239,14 @@ function checkip(){
 }
 # +---------------------------------------------------+
 
-
 # +---------------------------------------------------+
 # Main logic
 # +---------------------------------------------------+
+
 if [ `whoami` == root ]
     then
-		while true
+    	menu="1"
+		while [ $menu == "1" ]
 		do
         	show_menus
         	read_options
