@@ -101,6 +101,9 @@ baruwa-admin syncdb --noinput
 for name in $(echo "accounts messages lists reports status fixups config"); do
  baruwa-admin migrate $name;
 done
+
+mkdir -p /etc/MailScanner/signatures/domains/text
+mkdir -p /etc/MailScanner/signatures/domains/html
 # +---------------------------------------------------+
 
 

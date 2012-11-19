@@ -62,6 +62,13 @@ chmod 700 EFA-Update
 # +---------------------------------------------------+
 
 # +---------------------------------------------------+
+echo "[EFA] Updating baruwa configuration"
+
+mkdir -p /etc/MailScanner/signatures/domains/text
+mkdir -p /etc/MailScanner/signatures/domains/html
+# +---------------------------------------------------+
+
+# +---------------------------------------------------+
 echo "[EFA] Modifying version numbers"
 
 # /etc/issue
