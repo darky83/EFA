@@ -104,7 +104,7 @@ func_setipsettings(){
 
 	# Edit hosts file
 	echo "127.0.0.1		localhost" > /etc/hosts
-	echo "$IP		$HOSTNAME.$DOMAINNAME	$HOSTNAME" >> /etc/hosts
+	echo "$IP	$HOSTNAME.$DOMAINNAME	$HOSTNAME" >> /etc/hosts
 	echo "" >> /etc/hosts
 	echo "# The following lines are desirable for IPv6 capable hosts" >> /etc/hosts
 	echo "::1     ip6-localhost ip6-loopback" >> /etc/hosts
