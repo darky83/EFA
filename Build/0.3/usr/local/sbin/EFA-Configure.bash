@@ -67,6 +67,18 @@ opt_ip-settings(){
 # +---------------------------------------------------+
 
 # +---------------------------------------------------+
+# Function to grab the current IP settings.
+# +---------------------------------------------------+
+function func_getipsettings(){
+	IP="`cat /etc/network/interfaces | grep address | awk {' print $2 '}`"
+	NM="`cat /etc/network/interfaces | grep netmask | awk {' print $2 '}`"
+	GW="`cat /etc/network/interfaces | grep gateway | awk {' print $2 '}`"
+	DNS1="`cat /etc/resolv.conf  | grep nameserver | awk 'NR==1 {print $2}'`"
+	DNS2="`cat /etc/resolv.conf  | grep nameserver | awk 'NR==2 {print $2}'`"
+}
+# +---------------------------------------------------+
+
+# +---------------------------------------------------+
 # Function to set the new IP settings
 # +---------------------------------------------------+
 func_setipsettings(){
@@ -86,12 +98,38 @@ func_setipsettings(){
 					fi
 				done
 		done
-	echo ""
-	echo $IP
-	echo $NM
-	echo $GW
-	echo $DNS1
-	echo $DNS2
+	# Grab current FQDN
+	HOSTNAME="`cat /etc/mailname | sed  's/\..*//'`"
+	DOMAINNAME="`cat /etc/mailname | sed -n 's/[^.]*\.//p'`"
+
+	# Edit hosts file
+	echo "127.0.0.1		localhost" > /etc/hosts
+	echo "$IP		$HOSTNAME.$DOMAINNAME	$HOSTNAME" >> /etc/hosts
+	echo "" >> /etc/hosts
+	echo "# The following lines are desirable for IPv6 capable hosts" >> /etc/hosts
+	echo "::1     ip6-localhost ip6-loopback" >> /etc/hosts
+	echo "fe00::0 ip6-localnet" >> /etc/hosts
+	echo "ff00::0 ip6-mcastprefix" >> /etc/hosts
+	echo "ff02::1 ip6-allnodes" >> /etc/hosts
+	echo "ff02::2 ip6-allrouters" >> /etc/hosts
+
+	# Edit resolv.conf
+	echo "nameserver $DNS1" > /etc/resolv.conf
+	echo "nameserver $DNS2" >> /etc/resolv.conf
+	
+	# Edit interfaces
+	echo "auto lo" > /etc/network/interfaces
+	echo "iface lo inet loopback" >> /etc/network/interfaces
+	echo " " >> /etc/network/interfaces
+	echo "auto eth0" >> /etc/network/interfaces
+	echo "iface eth0 inet static" >> /etc/network/interfaces
+	echo "        address $IP" >> /etc/network/interfaces
+	echo "        netmask $NM" >> /etc/network/interfaces
+	echo "        gateway $GW" >> /etc/network/interfaces
+	echo "        dns-nameservers $DNS1 $DNS2" >> /etc/network/interfaces
+	
+	#/etc/init.d/networking stop
+	#/etc/init.d/networking start	
 	pause
 }
 # +---------------------------------------------------+
@@ -205,18 +243,6 @@ trap '' SIGINT SIGQUIT SIGTSTP
 # +---------------------------------------------------+
 pause(){
 	read -p "Press [Enter] key to continue..." fackEnterKey
-}
-# +---------------------------------------------------+
-
-# +---------------------------------------------------+
-# Function to grab the current IP settings.
-# +---------------------------------------------------+
-function func_getipsettings(){
-	IP="`cat /etc/network/interfaces | grep address | awk {' print $2 '}`"
-	NM="`cat /etc/network/interfaces | grep netmask | awk {' print $2 '}`"
-	GW="`cat /etc/network/interfaces | grep gateway | awk {' print $2 '}`"
-	DNS1="`cat /etc/resolv.conf  | grep nameserver | awk 'NR==1 {print $2}'`"
-	DNS2="`cat /etc/resolv.conf  | grep nameserver | awk 'NR==2 {print $2}'`"
 }
 # +---------------------------------------------------+
 
