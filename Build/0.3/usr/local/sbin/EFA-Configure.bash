@@ -1,7 +1,7 @@
 #!/bin/bash
 # +---------------------------------------------------+
 # EFA-Reconfigure
-# V0.1-20121115
+# V0.1-20121124
 # +---------------------------------------------------+
 
 # +---------------------------------------------------+
@@ -18,13 +18,15 @@ opt_ip-settings(){
 			echo "-------------- IP SETTINGS --------------"
 			echo " "
 			echo "Current IP settings are:"
-			echo "1) IP:		$IP"
-			echo "2) Netmask:	$NM"
-			echo "3) Gateway:	$GW"
-			echo "4) Primary DNS:	$DNS1"
+			echo "1) IP:			$IP"
+			echo "2) Netmask:		$NM"
+			echo "3) Gateway:		$GW"
+			echo "4) Primary DNS:		$DNS1"
 			echo "5) Secondary DNS:	$DNS2"
 			echo ""
 			echo "e) Return to main menu"
+			echo ""
+			echo "Note: Network will reset when changing values."
 			echo ""
 			local choice
 			read -p "Enter setting you want to change: " choice
@@ -89,7 +91,6 @@ func_setipsettings(){
 				do
 					if checkip $ip
 						then
-							echo "OK  $ip"
 							validcheck=0
 						else
 							echo "ERROR: The value $ip seems to be invalid"
@@ -117,6 +118,7 @@ func_setipsettings(){
 	echo "nameserver $DNS1" > /etc/resolv.conf
 	echo "nameserver $DNS2" >> /etc/resolv.conf
 	
+	/etc/init.d/networking stop >> /dev/null
 	# Edit interfaces
 	echo "auto lo" > /etc/network/interfaces
 	echo "iface lo inet loopback" >> /etc/network/interfaces
@@ -128,8 +130,9 @@ func_setipsettings(){
 	echo "        gateway $GW" >> /etc/network/interfaces
 	echo "        dns-nameservers $DNS1 $DNS2" >> /etc/network/interfaces
 	
-	#/etc/init.d/networking stop
-	#/etc/init.d/networking start	
+	echo ""
+	/etc/init.d/networking start
+	echo ""
 	pause
 }
 # +---------------------------------------------------+
@@ -138,13 +141,77 @@ func_setipsettings(){
 # Option HOSTNAME
 # +---------------------------------------------------+
 opt_hostname(){
-	clear
-	echo "----------------- E.F.A -----------------"
-	echo "---------------- HOSTNAME ---------------"
-	echo ""
-	pause
+	menu=0
+	hnmenu=1
+	while [ $hnmenu == "1" ]
+		do
+			HOSTNAME="`cat /etc/mailname | sed  's/\..*//'`"
+			DOMAINNAME="`cat /etc/mailname | sed -n 's/[^.]*\.//p'`"
+			clear
+			echo "----------------- E.F.A -----------------"
+			echo "---------------- HOSTNAME ---------------"
+			echo ""
+			echo "Current Hostname settings are:"
+			echo "1) HOSTNAME:		$HOSTNAME"
+			echo "2) DOMAIN:		$DOMAINNAME"
+			echo ""
+			echo "e) Return to main menu"
+			echo ""
+			local choice
+			read -p "Enter setting you want to change: " choice
+			case $choice in
+				1) 	hnmenu=0
+					echo ""
+					read -p "Enter your new hostname: " HOSTNAME
+					func_sethnsettings
+					hnmenu=1
+					;;
+				2) hnmenu=0
+					echo ""
+					read -p "Enter your new domainname: " DOMAINNAME
+					func_sethnsettings
+					hnmenu=1
+					;;
+				e) menu=1 && return ;;
+				*) echo -e "Error \"$choice\" is not an option..." && sleep 2
+			esac
+	done
 }
 # +---------------------------------------------------+
+
+# +---------------------------------------------------+
+# Change hostname
+# +---------------------------------------------------+
+func_sethnsettings(){
+	# Grab current settings
+	func_getipsettings
+	
+	# Change Hostname and mailname
+	echo $HOSTNAME > /etc/hostname
+	echo "$HOSTNAME.$DOMAINNAME" > /etc/mailname  
+	
+	# Edit hosts file
+	echo "127.0.0.1		localhost" > /etc/hosts
+	echo "$IP	$HOSTNAME.$DOMAINNAME	$HOSTNAME" >> /etc/hosts
+	echo "" >> /etc/hosts
+	echo "# The following lines are desirable for IPv6 capable hosts" >> /etc/hosts
+	echo "::1     ip6-localhost ip6-loopback" >> /etc/hosts
+	echo "fe00::0 ip6-localnet" >> /etc/hosts
+	echo "ff00::0 ip6-mcastprefix" >> /etc/hosts
+	echo "ff02::1 ip6-allnodes" >> /etc/hosts
+	echo "ff02::2 ip6-allrouters" >> /etc/hosts
+	/etc/init.d/hostname.sh
+	
+	# Change postfix config
+	postconf -e myhostname=$HOSTNAME.$DOMAINNAME
+	postconf -e mydestination="$HOSTNAME.$DOMAINNAME, localhost.$DOMAINNAME, localhost"
+	
+	# Change baruwa from email address.
+	sed -i "/^#DEFAULT_FROM_EMAIL = / c\DEFAULT_FROM_EMAIL = 'postmaster@$DOMAINNAME' " /etc/baruwa/settings.py
+	
+	echo "Settings changed.."
+	pause	
+}
 
 # +---------------------------------------------------+
 # Option Outbound mail relay
