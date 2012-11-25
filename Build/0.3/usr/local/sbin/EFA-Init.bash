@@ -1,7 +1,7 @@
 #!/bin/bash
 # +---------------------------------------------------+
 # EFA-Configure
-# V0.1-20121016
+# V0.1-20121125
 # +---------------------------------------------------+
 
 # +---------------------------------------------------+
@@ -202,7 +202,7 @@ function FUNCTION-WRITE-SETTINGS()
   echo "- Setting postfix configuration"
   postconf -e myhostname=$HOSTNAME.$DOMAINNAME
   postconf -e mydestination="$HOSTNAME.$DOMAINNAME, localhost.$DOMAINNAME, localhost"
-  echo "root $ADMINEMAIL" >> /etc/postfix/virtual
+  echo "root $ADMINEMAIL" > /etc/postfix/virtual
   echo "abuse $ADMINEMAIL" >> /etc/postfix/virtual
   echo "postmaster $ADMINEMAIL" >> /etc/postfix/virtual
   postmap /etc/postfix/virtual

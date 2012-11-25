@@ -1,7 +1,9 @@
 #!/bin/bash
 # +---------------------------------------------------+
 # EFA-Reconfigure
-# V0.1-20121124
+# V0.1-20121125
+# TODO
+# - Configure mail relay for clients config.
 # +---------------------------------------------------+
 
 # +---------------------------------------------------+
@@ -103,6 +105,9 @@ func_setipsettings(){
 	HOSTNAME="`cat /etc/mailname | sed  's/\..*//'`"
 	DOMAINNAME="`cat /etc/mailname | sed -n 's/[^.]*\.//p'`"
 
+	# Stopping services
+	/etc/init.d/rabbitmq-server	stop >> /dev/null
+
 	# Edit hosts file
 	echo "127.0.0.1		localhost" > /etc/hosts
 	echo "$IP	$HOSTNAME.$DOMAINNAME	$HOSTNAME" >> /etc/hosts
@@ -132,6 +137,7 @@ func_setipsettings(){
 	
 	echo ""
 	/etc/init.d/networking start
+	/etc/init.d/rabbitmq-server	start >> /dev/null
 	echo ""
 	pause
 }
@@ -182,10 +188,27 @@ opt_hostname(){
 # +---------------------------------------------------+
 # Change hostname
 # +---------------------------------------------------+
-func_sethnsettings(){
+func_sethnsettings(){	
+	#first check if HN and DN are valid.
+	if [[ ! $HOSTNAME =~ ^[-a-zA-Z0-9]{2,256}+$ ]]
+		then
+			echo "WARNING: The hostname "$HOSTNAME" seems to be invalid"
+			pause
+			return
+	fi
+	if [[ ! $DOMAINNAME =~ ^[-.a-zA-Z0-9]{2,256}+$ ]]
+		then
+			echo "WARNING: The domain "$DOMAINNAME" seems to be invalid"
+			pause
+			return
+	fi
+	
+	# Stop services
+	/etc/init.d/rabbitmq-server	stop >> /dev/null
+	
 	# Grab current settings
 	func_getipsettings
-	
+
 	# Change Hostname and mailname
 	echo $HOSTNAME > /etc/hostname
 	echo "$HOSTNAME.$DOMAINNAME" > /etc/mailname  
@@ -209,6 +232,9 @@ func_sethnsettings(){
 	# Change baruwa from email address.
 	sed -i "/^#DEFAULT_FROM_EMAIL = / c\DEFAULT_FROM_EMAIL = 'postmaster@$DOMAINNAME' " /etc/baruwa/settings.py
 	
+	# Start services
+	/etc/init.d/rabbitmq-server start >> /dev/null
+	
 	echo "Settings changed.."
 	pause	
 }
@@ -217,15 +243,37 @@ func_sethnsettings(){
 # Option Outbound mail relay
 # +---------------------------------------------------+
 opt_mailrelay(){
-	clear
-	echo "----------------- E.F.A -----------------"
-	echo "---------- OUTBOUND MAILRELAY -----------"
-	echo " "
-	echo "Description"
-	echo "With this option you can configure E.F.A"
-	echo "to relay outgoing message for your local"
-	echo "mailserver or clients"
-	pause
+	menu=0
+	obmrmenu=1
+	while [ $obmrmenu == "1" ]
+		do
+			clear
+			echo "----------------- E.F.A -----------------"
+			echo "---------- OUTBOUND MAILRELAY -----------"
+			echo " "
+			echo "Description:"
+			echo "With this option you can configure E.F.A"
+			echo "to relay outgoing message for your local"
+			echo "mailserver or clients."
+			echo ""
+			echo "Current settings are:"
+			echo "1) xxxxxx:		$xxxxx"
+			echo ""
+			echo "e) Return to main menu"
+			echo ""
+			local choice
+			read -p "Enter setting you want to change: " choice
+			case $choice in
+				1) 	obmrmenu=0
+					echo ""
+					read -p "Enter your new xxxx: " xxxxx
+					func_setobmrsettings
+					obmrmenu=1
+					;;
+				e) menu=1 && return ;;
+				*) echo -e "Error \"$choice\" is not an option..." && sleep 2
+			esac
+	done
 }
 # +---------------------------------------------------+
 
@@ -233,34 +281,118 @@ opt_mailrelay(){
 # Option Outbound Smarthost
 # +---------------------------------------------------+
 opt_smarthost(){
-	clear
-	echo "----------------- E.F.A -----------------"
-	echo "---------- OUTBOUND SMARTHOST -----------"
-	echo " "
-	echo "Description:"
-	echo "With this option you can configure E.F.A"
-	echo "to use a external smarthost for outgoing"
-	echo "mail."
-	pause
+	menu=0
+	obshmenu=1
+	while [ $obshmenu == "1" ]
+		do
+			OBSH="`cat /etc/postfix/main.cf |grep "relayhost ="| sed 's/.*relayhost = //'`"
+
+			if [ -z "$OBSH" ]
+				then
+					OBSH="DISABLED"
+			fi
+			clear
+			echo "----------------- E.F.A -----------------"
+			echo "---------- OUTBOUND SMARTHOST -----------"
+			echo " "
+			echo "Description:"
+			echo "With this option you can configure E.F.A"
+			echo "to use a external smarthost for outgoing"
+			echo "mail. (usefull if you also use E.F.A as"
+			echo "an mailrelay)"
+			echo ""
+			echo "Current settings are:"
+			echo "1) Smarthost:		$OBSH"
+			echo "2) Disable smarthost"
+			echo ""
+			echo "e) Return to main menu"
+			echo ""
+			local choice
+			read -p "Enter setting you want to change: " choice
+			case $choice in
+				1) 	obshmenu=0
+					echo ""
+					read -p "Enter your new smarthost: " OBSH
+					postconf -e relayhost=$OBSH
+					/etc/init.d/postfix reload >>/dev/null
+					echo "Smarthost configured"
+					pause
+					obshmenu=1
+					;;
+				2)	obshmenu=0
+					echo ""
+					echo "Disabling SmartHost"
+					postconf -e relayhost=
+					/etc/init.d/postfix reload >>/dev/null
+					obshmenu=1
+					;;
+				e) menu=1 && return ;;
+				*) echo -e "Error \"$choice\" is not an option..." && sleep 2
+			esac
+	done
 }
 # +---------------------------------------------------+
 
 # +---------------------------------------------------+
 
 # +---------------------------------------------------+
-# Option Outbound Smarthost
+# Option admin email address
 # +---------------------------------------------------+
 opt_adminemail(){
-	clear
-	echo "----------------- E.F.A -----------------"
-	echo "---------- ADMIN EMAIL ADDRESS ----------"
-	echo " "
-	echo "Description:"
-	echo "With this option you can change the E.F.A"
-	pause
+	menu=0
+	aemenu=1
+	while [ $aemenu == "1" ]
+		do
+			ADMINEMAIL="`cat /etc/EFA-Configured | grep ADMINEMAIL | sed 's/.*ADMINEMAIL://'`"
+			clear
+			echo "----------------- E.F.A -----------------"
+			echo "---------- ADMIN EMAIL ADDRESS ----------"
+			echo " "
+			echo "Description:"
+			echo "With this option you can change the E.F.A"
+			echo "admin email address."
+			echo ""
+			echo "Current settings are:"
+			echo "1) ADMIN EMAIL:		$ADMINEMAIL"
+			echo ""
+			echo "e) Return to main menu"
+			echo ""
+			local choice
+			read -p "Enter setting you want to change: " choice
+			case $choice in
+				1) 	aemenu=0
+					echo ""
+					read -p "Enter your new admin email: " ADMINEMAIL
+					func_setaesettings
+					aemenu=1
+					;;
+				e) menu=1 && return ;;
+				*) echo -e "Error \"$choice\" is not an option..." && sleep 2
+			esac
+	done
 }
 # +---------------------------------------------------+
 
+# +---------------------------------------------------+
+# Change hostname
+# +---------------------------------------------------+
+func_setaesettings(){	
+	if [[ ! $ADMINEMAIL =~ ^[-_.@Aa-zA-Z0-9]{2,256}+$ ]]
+		then
+    		echo "WARNING: The adres $ADMINEMAIL seems to be invalid"
+	fi
+	
+	echo "root $ADMINEMAIL" > /etc/postfix/virtual
+	echo "abuse $ADMINEMAIL" >> /etc/postfix/virtual
+	echo "postmaster $ADMINEMAIL" >> /etc/postfix/virtual
+	postmap /etc/postfix/virtual
+	
+	sed -i "/^ADMINEMAIL:/ c\ADMINEMAIL:$ADMINEMAIL" /etc/EFA-Configured 
+	
+	echo "Settings changed.."
+	pause
+}
+# +---------------------------------------------------+
 
 # +---------------------------------------------------+
 # Display menus

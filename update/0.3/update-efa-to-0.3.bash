@@ -1,7 +1,10 @@
 #!/bin/bash
 # +---------------------------------------------------+
 # EFA 0.3 update script
-# version 20121111
+# version 20121125
+# TODO
+# - FIX SIGNATURES
+# - 
 # +---------------------------------------------------+
 echo ""
 echo "[EFA] Did you create a snapshot of your system?" 
@@ -71,5 +74,6 @@ mkdir -p /etc/MailScanner/signatures/domains/html
 # +---------------------------------------------------+
 echo "[EFA] Modifying version numbers"
 
-# /etc/issue
+sed -i '/^--- Welcome to EFA / c\--- Welcome to EFA 0.3 ---' /etc/issue
+echo "EFA-0.3" > /etc/EFA-version 
 # +---------------------------------------------------+
