@@ -20,6 +20,8 @@
 # +--------------------------------------------------------------------+
 # TODO
 # - Configure mail relay for clients config.
+# - Enable greylisting
+# - Disable greylisting
 # +--------------------------------------------------------------------+
 
 # +---------------------------------------------------+
@@ -55,13 +57,13 @@ opt_ip-settings(){
 					func_setipsettings
 					ipmenu=1
 					;;
-				2) ipmenu=0
+				2)  ipmenu=0
 					echo ""
 					read -p "Enter your new netmask: " NM
 					func_setipsettings
 					ipmenu=1
 					;;
-				3) 	ipmenu=0
+				3)  ipmenu=0
 					echo ""
 					read -p "Enter your new gateway: " GW
 					func_setipsettings
@@ -188,7 +190,7 @@ opt_hostname(){
 					func_sethnsettings
 					hnmenu=1
 					;;
-				2) hnmenu=0
+				2)	hnmenu=0
 					echo ""
 					read -p "Enter your new domainname: " DOMAINNAME
 					func_sethnsettings
@@ -280,7 +282,7 @@ opt_mailrelay(){
 			local choice
 			read -p "Enter setting you want to change: " choice
 			case $choice in
-				1) 	obmrmenu=0
+				1)  obmrmenu=0
 					echo ""
 					read -p "Enter your new xxxx: " xxxxx
 					func_setobmrsettings
@@ -326,7 +328,7 @@ opt_smarthost(){
 			local choice
 			read -p "Enter setting you want to change: " choice
 			case $choice in
-				1) 	obshmenu=0
+				1)  obshmenu=0
 					echo ""
 					read -p "Enter your new smarthost: " OBSH
 					postconf -e relayhost=$OBSH
@@ -335,7 +337,7 @@ opt_smarthost(){
 					pause
 					obshmenu=1
 					;;
-				2)	obshmenu=0
+				2)  obshmenu=0
 					echo ""
 					echo "Disabling SmartHost"
 					postconf -e relayhost=
@@ -376,7 +378,7 @@ opt_adminemail(){
 			local choice
 			read -p "Enter setting you want to change: " choice
 			case $choice in
-				1) 	aemenu=0
+				1)  aemenu=0
 					echo ""
 					read -p "Enter your new admin email: " ADMINEMAIL
 					func_setaesettings
@@ -388,6 +390,120 @@ opt_adminemail(){
 	done
 }
 # +---------------------------------------------------+
+
+# +---------------------------------------------------+
+# Grey listing
+# +---------------------------------------------------+
+opt_sqlgrey(){
+	menu=0
+	greymenu=1
+	while [ $greymenu == "1" ]
+		do
+			func_checkgreylisting
+			clear
+			echo "----------------- E.F.A -----------------"
+			echo "-------------- Greylisting --------------"
+			echo " "
+			echo "Description:"
+			echo "Greylisting will block incoming connections"
+			echo "for a few minutes, after that the connection"
+			echo "is allowed again."
+			echo " "
+			echo "Greylisting is currently: $GREYLIST"
+			echo " "
+			echo "1) Enable"
+			echo "2) Disable"
+			echo " "
+			echo "e) Return to main menu"
+			echo ""
+			local choice
+			read -p "Enter setting you want to change: " choice
+			case $choice in
+				1)  greymenu=0
+					func_enablegreylisting
+					greymenu=1
+					;;
+				2)  greymenu=0
+					func_disablegreylisting
+					greymenu=1
+					;;
+				e)  menu=1 && return ;;
+				*) echo -e "Error \"$choice\" is not an option..." && sleep 2
+			esac
+	done			
+}
+# +---------------------------------------------------+
+
+# +---------------------------------------------------+
+# Check greylisting status
+# +---------------------------------------------------+
+func_checkgreylisting(){
+	GREYLIST=`cat /etc/EFA-Configured | grep GREYLIST | cut -d ":" -f2`
+		if [ -z "$GREYLIST" ]
+			then
+				GREYLIST="DISABLED"
+				GREYLISTINSTALLED="NO"
+	fi
+}
+# +---------------------------------------------------+
+
+
+# +---------------------------------------------------+
+# Enable Greylisting
+# +---------------------------------------------------+
+func_enablegreylisting(){
+
+	func_checkgreylisting
+	if [ "$GREYLIST" = "ENABLED" ]
+		then
+			echo "Greylisting already enabled"
+			pause
+		else	
+			if [ "$GREYLISTINSTALLED" = "NO" ]
+				then
+					clear
+					echo "Starting SQL Grey installation"
+					
+					# TODO
+					# Install greylisting
+					# Configure greylisting
+					# check enable/disable methode
+
+					echo "GREYLIST:ENABLED" >> /etc/EFA-Configured
+					pause
+				else
+					clear
+					echo "Enabling SQL Grey"
+					# TODO
+					# Configure Greylisting
+					
+					sed -i "/^GREYLIST:/ c\GREYLIST:ENABLED" /etc/EFA-Configured
+					pause
+			fi
+	fi
+}
+# +---------------------------------------------------+
+		
+# +---------------------------------------------------+
+# Disable Greylisting
+# +---------------------------------------------------+
+func_disablegreylisting(){
+
+	func_checkgreylisting
+	if [ "$GREYLIST" = "DISABLED" ]
+		then
+			echo "Greylisting already disabled"
+			pause
+		else
+			
+			# TODO
+			# Disable greylisting
+			
+			sed -i "/^GREYLIST:/ c\GREYLIST:DISABLED" /etc/EFA-Configured
+	fi
+}
+# +---------------------------------------------------+
+
 
 # +---------------------------------------------------+
 # Change hostname
@@ -428,6 +544,7 @@ show_menus() {
 	echo "3) Outbound mail relay"
 	echo "4) Outbound smarthost" 
 	echo "5) Admin Email address"
+	echo "6) Grey listing"
 	echo " "
 	echo "e. Exit"
 }
@@ -441,6 +558,7 @@ read_options(){
 		3) opt_mailrelay ;;
 		4) opt_smarthost ;;
 		5) opt_adminemail ;;
+		6) opt_sqlgrey ;;
 		e) exit 0;;
 		*) echo -e "Error \"$choice\" is not an option..." && sleep 2
 	esac
