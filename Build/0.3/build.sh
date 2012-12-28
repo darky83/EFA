@@ -1,6 +1,6 @@
 #!/bin/bash
 # +--------------------------------------------------------------------+
-# EFA build script v 0.3-20121111
+# EFA build script v 0.3-20121228
 # +--------------------------------------------------------------------+
 # Copyright (C) 2012  http://www.efa-project.org
 #
@@ -239,7 +239,7 @@ postconf -e mailbox_size_limit=512000000
 postconf -e smtpd_client_restrictions="permit_sasl_authenticated"
 postconf -e smtpd_sender_restrictions="permit_sasl_authenticated, check_sender_access hash:/etc/postfix/sender_access, reject_non_fqdn_sender, reject_unknown_sender_domain"
 postconf -e smtpd_helo_restrictions="permit_sasl_authenticated check_helo_access hash:/etc/postfix/helo_access, reject_invalid_hostname"
-postconf -e smtpd_recipient_restrictions="permit_sasl_authenticated, reject_unknown_recipient_domain, reject_unauth_destination, whitelist_policy, rbl_policy, spf_policy"
+postconf -e smtpd_recipient_restrictions="permit_sasl_authenticated, permit_mynetworks, reject_unknown_recipient_domain, reject_unauth_destination, whitelist_policy, rbl_policy, spf_policy"
 postconf -e smtpd_data_restrictions="permit_sasl_authenticated, reject_unauth_pipelining"
 postconf -e smtpd_restriction_classes="spf_policy, rbl_policy, whitelist_policy"
 postconf -e spf_policy="check_policy_service unix:private/policy"

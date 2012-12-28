@@ -19,7 +19,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 # +--------------------------------------------------------------------+
 # TODO
-# - Configure mail relay for clients config.
 # - Enable greylisting
 # - Disable greylisting
 # +--------------------------------------------------------------------+
@@ -265,6 +264,7 @@ opt_mailrelay(){
 	obmrmenu=1
 	while [ $obmrmenu == "1" ]
 		do
+			RELAYS=`cat /etc/postfix/main.cf | grep "mynetworks =" | sed 's/^\(.\{57\}\)//'`
 			clear
 			echo "----------------- E.F.A -----------------"
 			echo "---------- OUTBOUND MAILRELAY -----------"
@@ -275,7 +275,7 @@ opt_mailrelay(){
 			echo "mailserver or clients."
 			echo ""
 			echo "Current settings are:"
-			echo "1) xxxxxx:		$xxxxx"
+			echo "1) Hosts:		$RELAYS"
 			echo ""
 			echo "e) Return to main menu"
 			echo ""
@@ -284,8 +284,15 @@ opt_mailrelay(){
 			case $choice in
 				1)  obmrmenu=0
 					echo ""
-					read -p "Enter your new xxxx: " xxxxx
-					func_setobmrsettings
+					echo "Enter your new hosts string below."
+					echo "Note: If you already have hosts defined you need to reenter these."
+					echo "      An empty line will remove all hosts."
+					echo "      Seperate multiple hosts with spaces."
+					echo "      Networks can be defined in the format: x.x.x.x/xx"
+					echo ""
+					read -p "> " RELAYS
+					postconf -e mynetworks="127.0.0.0/8 [::ffff:127.0.0.0]/104 [::1]/128 $RELAYS"
+					/etc/init.d/postfix reload >>/dev/null
 					obmrmenu=1
 					;;
 				e) menu=1 && return ;;
@@ -294,6 +301,7 @@ opt_mailrelay(){
 	done
 }
 # +---------------------------------------------------+
+
 
 # +---------------------------------------------------+
 # Option Outbound Smarthost

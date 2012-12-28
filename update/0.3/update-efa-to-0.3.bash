@@ -1,7 +1,7 @@
 #!/bin/bash
 # +---------------------------------------------------+
 # EFA 0.3 update script
-# version 20121125
+# version 20121228
 # TODO
 # - FIX SIGNATURES
 # - 
@@ -37,6 +37,7 @@ echo "[EFA] Modifying Postfix settings"
 MYHOSTNAME="`cat /etc/mailname | sed  's/\..*//'`"
 MYDOMAINNAME="`cat /etc/mailname | sed -n 's/[^.]*\.//p'`"
 postconf -e mydestination="$MYHOSTNAME.$MYDOMAINNAME, localhost.$MYDOMAINNAME ,localhost"
+postconf -e smtpd_recipient_restrictions="permit_sasl_authenticated, permit_mynetworks, reject_unknown_recipient_domain, reject_unauth_destination, whitelist_policy, rbl_policy, spf_policy"
 # +---------------------------------------------------+
 
 # +---------------------------------------------------+

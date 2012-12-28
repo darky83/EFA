@@ -30,7 +30,12 @@ Current development version: 0.3
 - EFA-Update in 0.2 was the wrong version, correct version added to 0.3
   (Manual update will be needed from 0.2 to 0.3)
 - EFA-Configure is moved to EFA-Init (to be run once for initial config)
-- New EFA-Configure script to modify the system after inital config and to configure new features.
+- New EFA-Configure script to modify the system after initial config and to configure new features.
+- - Option to change IP 
+- - Option to change hostname
+- - Option to enable relaying for specific hosts (internal LAN for example)
+- - Option to enable outgoing smarthost
+- - Option to change admin email adres
 
 #------------------------------------------#
 # 0.2
