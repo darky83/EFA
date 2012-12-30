@@ -1,7 +1,7 @@
 #!/bin/bash
 # +--------------------------------------------------------------------+
-# EFA-Reconfigure
-# V0.1-20121125
+# EFA-Configure
+# V0.3-20121230
 # +--------------------------------------------------------------------+
 # Copyright (C) 2012  http://www.efa-project.org
 #
@@ -443,6 +443,46 @@ opt_sqlgrey(){
 # +---------------------------------------------------+
 
 # +---------------------------------------------------+
+# Baruwa Quarantine Report HostURL
+# +---------------------------------------------------+
+opt_bar-quar-rep-url(){
+menu=0
+	barquarrepurlmenu=1
+	while [ $barquarrepurlmenu == "1" ]
+		do
+			QUARREPURL="`cat /etc/baruwa/settings.py | grep "QUARANTINE_REPORT_HOSTURL =" | sed 's/.*QUARANTINE_REPORT_HOSTURL = //' | tr -d "'"`"
+			clear
+			echo "----------------- E.F.A -----------------"
+			echo "--- Baruwa Quarantine Report HostURL ----"
+			echo " "
+			echo "Description:"
+			echo "This is the URL that is send in the quarantine"
+			echo "report messages by baruwa. By default this is"
+			echo "set to the IP of your baruwa installation."
+			echo " "
+			echo "Current setting is:"
+			echo "1) $QUARREPURL"
+			echo " "
+			echo "e) Return to main menu"
+			echo ""
+			local choice
+			read -p "Enter setting you want to change: " choice
+			case $choice in
+				1)  barquarrepurlmenu=0
+					echo ""
+					read -p "Enter your new URL: " QUARREPURL
+					sed -i "/^QUARANTINE_REPORT_HOSTURL = / c\QUARANTINE_REPORT_HOSTURL = '$QUARREPURL' " /etc/baruwa/settings.py
+					/etc/init.d/baruwa restart >> /dev/null
+					barquarrepurlmenu=1
+					;;
+				e)  menu=1 && return ;;
+				*) echo -e "Error \"$choice\" is not an option..." && sleep 2
+			esac
+	done			
+}
+# +---------------------------------------------------+
+
+# +---------------------------------------------------+
 # Check greylisting status
 # +---------------------------------------------------+
 func_checkgreylisting(){
@@ -553,6 +593,9 @@ show_menus() {
 	echo "4) Outbound smarthost" 
 	echo "5) Admin Email address"
 	echo "6) Grey listing"
+	echo ""
+	echo "+- Baruwa settings:"
+	echo "7) Quarantine report hosturl"
 	echo " "
 	echo "e. Exit"
 }
@@ -567,6 +610,7 @@ read_options(){
 		4) opt_smarthost ;;
 		5) opt_adminemail ;;
 		6) opt_sqlgrey ;;
+		7) opt_bar-quar-rep-url;;
 		e) exit 0;;
 		*) echo -e "Error \"$choice\" is not an option..." && sleep 2
 	esac
