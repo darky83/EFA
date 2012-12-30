@@ -36,6 +36,7 @@ Current development version: 0.3
 - - Option to enable relaying for specific hosts (internal LAN for example)
 - - Option to enable outgoing smarthost
 - - Option to change admin email adres
+- - Option to change baruwa' s quarantine host report URL.
 
 #------------------------------------------#
 # 0.2
