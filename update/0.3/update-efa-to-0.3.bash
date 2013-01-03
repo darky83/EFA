@@ -1,7 +1,7 @@
 #!/bin/bash
 # +---------------------------------------------------+
 # EFA 0.3 update script
-# version 20121228
+# version 20130103
 # TODO
 # - FIX SIGNATURES
 # - 
@@ -18,11 +18,33 @@ echo "[EFA] Starting update"
 # +---------------------------------------------------+
 echo "[EFA] Updating system packages"
 
+echo "baruwa baruwa/webserver_type select apache2" | debconf-set-selections
+echo "baruwa baruwa/webserver/vhost string localhost.localdomain" | debconf-set-selections
+echo "baruwa baruwa/mysql/configure boolean true" | debconf-set-selections
+echo "baruwa baruwa/mysql/dbserver string localhost" | debconf-set-selections
+echo "baruwa baruwa/mysql/dbadmin string root" | debconf-set-selections
+echo "baruwa baruwa/mysql/dbadmpass password password" | debconf-set-selections
+echo "baruwa baruwa/mysql/dbuser string baruwa" | debconf-set-selections
+echo "baruwa baruwa/mysql/dbpass password" | debconf-set-selections
+echo "baruwa baruwa/mysql/dbname string baruwa" | debconf-set-selections
+echo "baruwa baruwa/rabbitmq/mqhost string localhost" | debconf-set-selections
+echo "baruwa baruwa/rabbitmq/mqvhost string baruwa" | debconf-set-selections
+echo "baruwa baruwa/rabbitmq/mquser string baruwa" | debconf-set-selections
+echo "baruwa baruwa/rabbitmq/mqpass password password" | debconf-set-selections
+echo "baruwa baruwa/django/baruwauser string baruwaadmin" | debconf-set-selections
+echo "baruwa baruwa/django/baruwapass password password" | debconf-set-selections
+echo "baruwa baruwa/django/baruwaemail string root" | debconf-set-selections
+echo "baruwa baruwa/purge boolean true" | debconf-set-selections
+echo "baruwa baruwa/mysql/configure boolean true" | debconf-set-selections
 apt-get update
-apt-get -y upgrade
+apt-get -q -y upgrade
 
-dpkg -purge exim4 exim4-base exim4-config exim4-daemon-light
-apt-get remove popularity-contest
+dpkg --purge exim4 exim4-base exim4-config exim4-daemon-light
+apt-get -q -y remove popularity-contest
+
+# Hold a few packages.
+echo "mailscanner hold" | dpkg --set-selections
+echo "baruwa hold" | dpkg --set-selections
 # +---------------------------------------------------+
 
 # +---------------------------------------------------+

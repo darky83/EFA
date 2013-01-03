@@ -1,6 +1,6 @@
 #!/bin/bash
 # +--------------------------------------------------------------------+
-# EFA build script v 0.3-20121228
+# EFA build script v 0.3-20130103
 # +--------------------------------------------------------------------+
 # Copyright (C) 2012  http://www.efa-project.org
 #
@@ -61,13 +61,17 @@ update-rc.d -f portmap remove
 
 # +---------------------------------------------------+
 # Install needed packages
-# When asked for postfix configuration choose: Internet Site
-# System mail name: name.domain.ext
-# mysql root password: password
 apt-get update
-apt-get -y install unrar-free vim screen htop ssh ntp mysql-server apache2 postfix postfix-mysql rabbitmq-server pyzor razor sudo postfix-policyd-spf-perl
-dpkg -purge exim4 exim4-base exim4-config exim4-daemon-light
-apt-get remove popularity-contest
+#export DEBIAN_FRONTEND=noninteractive
+echo "mysql-server-5.1 mysql-server/root_password_again password password" | debconf-set-selections
+echo "mysql-server-5.1 mysql-server/root_password password password" | debconf-set-selections
+echo "postfix postfix/main_mailer_type select Internet Site" | debconf-set-selections
+echo "postfix postfix/mailname string efa03.efa-project.org" | debconf-set-selections
+
+
+apt-get -q -y install unrar-free vim screen htop ssh ntp mysql-server-5.1 apache2 postfix postfix-mysql rabbitmq-server pyzor razor sudo postfix-policyd-spf-perl
+dpkg --purge exim4 exim4-base exim4-config exim4-daemon-light
+apt-get -q -y remove popularity-contest
 # +---------------------------------------------------+
 
 # +---------------------------------------------------+
@@ -86,26 +90,28 @@ rabbitmqctl delete_user guest
 wget -O - http://apt.baruwa.org/baruwa-apt-keys.gpg | apt-key add -
 echo "deb http://apt.baruwa.org/debian squeeze main" >> /etc/apt/sources.list.d/baruwa.list
 apt-get update
-# Webserver to configure: apache2
-# virtual host name: localhost.localdomain
-# Configure MySQL: Yes
-# Mysql Host: localhost
-# database administrator username: root
-# database administrator password: password
-# database user for baruwa: baruwa
-# database user password: password
-# baruwa database name: baruwa
-# rabbitMQ host: localhost
-# rabbitmq vhost: baruwa
-# rabbitmq user for baruwa: baruwa
-# rabbitmq user password: password
-# admin user for baruwa: baruwaadmin
-# baruwa admin user password: password
-# admin users meail adres: root
-# Delete database on purge: yes
 # Configure MySQL: yes
 
-apt-get -y install baruwa
+echo "baruwa baruwa/webserver_type select apache2" | debconf-set-selections
+echo "baruwa baruwa/webserver/vhost string localhost.localdomain" | debconf-set-selections
+echo "baruwa baruwa/mysql/configure boolean true" | debconf-set-selections
+echo "baruwa baruwa/mysql/dbserver string localhost" | debconf-set-selections
+echo "baruwa baruwa/mysql/dbadmin string root" | debconf-set-selections
+echo "baruwa baruwa/mysql/dbadmpass password password" | debconf-set-selections
+echo "baruwa baruwa/mysql/dbuser string baruwa" | debconf-set-selections
+echo "baruwa baruwa/mysql/dbpass password" | debconf-set-selections
+echo "baruwa baruwa/mysql/dbname string baruwa" | debconf-set-selections
+echo "baruwa baruwa/rabbitmq/mqhost string localhost" | debconf-set-selections
+echo "baruwa baruwa/rabbitmq/mqvhost string baruwa" | debconf-set-selections
+echo "baruwa baruwa/rabbitmq/mquser string baruwa" | debconf-set-selections
+echo "baruwa baruwa/rabbitmq/mqpass password password" | debconf-set-selections
+echo "baruwa baruwa/django/baruwauser string baruwaadmin" | debconf-set-selections
+echo "baruwa baruwa/django/baruwapass password password" | debconf-set-selections
+echo "baruwa baruwa/django/baruwaemail string root" | debconf-set-selections
+echo "baruwa baruwa/purge boolean true" | debconf-set-selections
+echo "baruwa baruwa/mysql/configure boolean true" | debconf-set-selections
+
+apt-get -q -y install baruwa
 baruwa-admin syncdb --noinput
 for name in $(echo "accounts messages lists reports status fixups config"); do
  baruwa-admin migrate $name;
@@ -389,9 +395,13 @@ update-rc.d spamassassin disable
 update-rc.d ssh disable
 update-rc.d clamav-freshclam disable
 update-rc.d postfix disable
+# +---------------------------------------------------+
 
-
-
+# +---------------------------------------------------+
+# Hold a few packages.
+echo "mailscanner hold" | dpkg --set-selections
+echo "baruwa hold" | dpkg --set-selections
+# +---------------------------------------------------+
 
 # +---------------------------------------------------+
 # Cleanup
@@ -401,6 +411,7 @@ echo "iface lo inet loopback" >> /etc/network/interfaces
 echo " " >> /etc/network/interfaces
 echo "nameserver 8.8.8.8" > /etc/resolv.conf
 echo "127.0.0.1               localhost efa02" > /etc/hosts
+# +---------------------------------------------------+
 
 # +---------------------------------------------------+
 reboot

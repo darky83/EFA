@@ -30,6 +30,7 @@ Current development version: 0.3
 - EFA-Update in 0.2 was the wrong version, correct version added to 0.3
   (Manual update will be needed from 0.2 to 0.3)
 - EFA-Configure is moved to EFA-Init (to be run once for initial config)
+- apt-get questions pre-answered during install.
 - New EFA-Configure script to modify the system after initial config and to configure new features.
 - - Option to change IP 
 - - Option to change hostname
