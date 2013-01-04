@@ -1,10 +1,10 @@
 #!/bin/bash
 # +---------------------------------------------------+
 # EFA 0.3 update script
-# version 20130103
+# version 20130104
 # TODO
 # - FIX SIGNATURES
-# - 
+# - FIX QUESTION FROM MYSQL CONFIGURATION IN BARUWA UPDATE.
 # +---------------------------------------------------+
 echo ""
 echo "[EFA] Did you create a snapshot of your system?" 
@@ -13,6 +13,24 @@ echo ""
 sleep 30
 echo ""
 echo "[EFA] Starting update"
+# +---------------------------------------------------+
+
+# +---------------------------------------------------+
+# Creating backup dirs
+mkdir /var/EFA/update/0.3
+mkdir /var/EFA/update/0.3/backup
+cp /etc/baruwa/settings.py /var/EFA/update/0.3/backup/baruwa-settings.py
+# +---------------------------------------------------+
+
+# +---------------------------------------------------+
+echo "[EFA] Fixing apache config"
+
+cp /etc/apache2/sites-enabled/baruwa /var/EFA/update/0.3/backup/baruwa-apache-conf-enabled.backup
+cp /etc/apache2/sites-available/baruwa /var/EFA/update/0.3/backup/baruwa-apache-conf-available.backup
+rm /etc/apache2/sites-enabled/baruwa
+rm /etc/apache2/sites-available/baruwa
+cp /var/EFA/update/0.3/backup/baruwa-apache-conf-enabled.backup /etc/apache2/sites-available/baruwa
+a2ensite baruwa >> /dev/null
 # +---------------------------------------------------+
 
 # +---------------------------------------------------+
@@ -37,12 +55,55 @@ echo "baruwa baruwa/django/baruwaemail string root" | debconf-set-selections
 echo "baruwa baruwa/purge boolean true" | debconf-set-selections
 echo "baruwa baruwa/mysql/configure boolean true" | debconf-set-selections
 apt-get update
-apt-get -q -y upgrade
+apt-get -q -y -o Dpkg::Options::="--force-confnew"  upgrade
+# +---------------------------------------------------+
+
+# +---------------------------------------------------+
+echo "[EFA] Restoring Baruwa settings"
+
+# Restore original Baruwa database name
+BARNAME="`cat /var/EFA/update/0.3/backup/baruwa-settings.py | grep \'NAME\': | sed 's/.*: //' | tr -d "'" | tr -d ","`"
+sed -i "/^        'NAME': / c\        'NAME': '$BARNAME'," /etc/baruwa/settings.py
+
+# Restore original Baruwa database user
+BARUSER="`cat /var/EFA/update/0.3/backup/baruwa-settings.py | grep \'USER\': | sed 's/.*: //' | tr -d "'" | tr -d ","`"
+sed -i "/^        'USER': / c\        'USER': '$BARUSER'," /etc/baruwa/settings.py
+
+# Restore original Baruwa database password
+BARPASSWORD="`cat /var/EFA/update/0.3/backup/baruwa-settings.py | grep \'PASSWORD\': | sed 's/.*: //' | tr -d "'" | tr -d ","`"
+sed -i "/^        'PASSWORD': / c\        'PASSWORD': '$BARPASSWORD'," /etc/baruwa/settings.py
+
+# Restore original Baruwa database host
+BARHOST="`cat /var/EFA/update/0.3/backup/baruwa-settings.py | grep \'HOST\': | sed 's/.*: //' | tr -d "'" | tr -d ","`"
+sed -i "/^        'HOST': / c\        'HOST': '$BARHOST'," /etc/baruwa/settings.py
+
+# Restore original Baruwa Timezone
+BARTIME_ZONE="`cat /var/EFA/update/0.3/backup/baruwa-settings.py | grep "TIME_ZONE = " | sed 's/.*TIME_ZONE = //' | tr -d "'"`"
+sed -i "/^#TIME_ZONE = / c\TIME_ZONE = '$BARTIME_ZONE' " /etc/baruwa/settings.py
+
+# Restore original Baruwa default from email
+BARDEFFROMEMAIL="`cat /var/EFA/update/0.3/backup/baruwa-settings.py | grep "DEFAULT_FROM_EMAIL = " | sed 's/.*DEFAULT_FROM_EMAIL = //' | tr -d "'"`"
+sed -i "/^#DEFAULT_FROM_EMAIL = / c\DEFAULT_FROM_EMAIL = '$BARDEFFROMEMAIL' " /etc/baruwa/settings.py
+
+# Restore original Broker Password
+BARBROKERPASS="`cat /var/EFA/update/0.3/backup/baruwa-settings.py | grep "BROKER_PASSWORD = " | sed 's/.*BROKER_PASSWORD = //' | tr -d '"'`"
+sed -i "/^BROKER_PASSWORD = / c\BROKER_PASSWORD = \"$BARBROKERPASS\" " /etc/baruwa/settings.py
+
+# Restore original quarantine report hosturl
+BARQUARREPURL="`cat /var/EFA/update/0.3/backup/baruwa-settings.py | grep "QUARANTINE_REPORT_HOSTURL =" | sed 's/.*QUARANTINE_REPORT_HOSTURL = //' | tr -d "'"`"
+sed -i "/^QUARANTINE_REPORT_HOSTURL = / c\QUARANTINE_REPORT_HOSTURL = '$BARQUARREPURL' " /etc/baruwa/settings.py
+# +---------------------------------------------------+
+
+# +---------------------------------------------------+
+echo "[EFA] Removing unwanted packages."
 
 dpkg --purge exim4 exim4-base exim4-config exim4-daemon-light
 apt-get -q -y remove popularity-contest
+# +---------------------------------------------------+
 
-# Hold a few packages.
+# +---------------------------------------------------+
+echo "[EFA] Holding packages"
+
 echo "mailscanner hold" | dpkg --set-selections
 echo "baruwa hold" | dpkg --set-selections
 # +---------------------------------------------------+
@@ -65,12 +126,9 @@ postconf -e smtpd_recipient_restrictions="permit_sasl_authenticated, permit_myne
 # +---------------------------------------------------+
 echo "[EFA] Updating E.F.A specific files"
 
-mkdir /var/EFA/update/0.3
-mkdir /var/EFA/update/0.3/backup
-
 # Update EFA-Init file
 cd /usr/local/sbin
-mv /usr/local/sbin/EFA-Init /var/EFA/update/0.3/backup/
+#mv /usr/local/sbin/EFA-Init /var/EFA/update/0.3/backup/
 wget http://www.efa-project.org/build/0.3/usr/local/sbin/EFA-Init
 chmod 700 EFA-Init
 
@@ -99,4 +157,11 @@ echo "[EFA] Modifying version numbers"
 
 sed -i '/^--- Welcome to EFA / c\--- Welcome to EFA 0.3 ---' /etc/issue
 echo "EFA-0.3" > /etc/EFA-version 
+# +---------------------------------------------------+
+
+# +---------------------------------------------------+
+echo "[EFA] Your system is updated rebooting."
+
+sleep 10
+reboot
 # +---------------------------------------------------+
