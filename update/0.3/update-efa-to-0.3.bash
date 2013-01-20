@@ -1,7 +1,7 @@
 #!/bin/bash
 # +---------------------------------------------------+
 # EFA 0.3 update script
-# version 20130104
+# version 20130120
 # +--------------------------------------------------------------------+
 # Copyright (C) 2012  http://www.efa-project.org
 #
@@ -22,11 +22,19 @@
 # - FIX SIGNATURES
 # - FIX QUESTION FROM MYSQL CONFIGURATION IN BARUWA UPDATE.
 # +---------------------------------------------------+
+
+# +---------------------------------------------------+
+# Pause function
+# +---------------------------------------------------+
+pause(){
+	read -p "Press [Enter] key to continue..." fackEnterKey
+}
+# +---------------------------------------------------+
+
 echo ""
-echo "[EFA] Did you create a snapshot of your system?" 
-echo "[EFA] Giving you 30 seconds to abort (Ctrl-c)" 
+echo "[EFA] WARNING: Did you create a snapshot of your system?" 
 echo ""
-sleep 30
+pause
 echo ""
 echo "[EFA] Starting update"
 # +---------------------------------------------------+
@@ -51,7 +59,11 @@ a2ensite baruwa >> /dev/null
 
 # +---------------------------------------------------+
 echo "[EFA] Updating system packages"
-
+echo " "
+echo "WARNING: You will get the question if you want to configure mysql TWICE"
+echo "WARNING: Please answer these questions with: YES."
+echo ""
+pause
 echo "baruwa baruwa/webserver_type select apache2" | debconf-set-selections
 echo "baruwa baruwa/webserver/vhost string localhost.localdomain" | debconf-set-selections
 echo "baruwa baruwa/mysql/configure boolean true" | debconf-set-selections

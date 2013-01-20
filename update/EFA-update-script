@@ -37,7 +37,7 @@ if [[ $CVERSION = "EFA-0.2" ]]
 		cd /var/EFA/update
 		wget -q $MIRROR1/update/0.3/update-efa-to-0.3.bash
 		chmod 700 update-efa-to-0.3.bash
-		/var/EFA/update-efa-to-0.3.bash
+		/var/EFA/update/update-efa-to-0.3.bash
 	else
 		echo "[EFA] ERROR no update file available for your EFA version"
 fi
