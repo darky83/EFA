@@ -252,6 +252,14 @@ func_sethnsettings(){
 	# Start services
 	/etc/init.d/rabbitmq-server start >> /dev/null
 	
+	# Reset permissons
+	PASSWD=""
+	PASSWD="`cat /etc/baruwa/settings.py | grep "BROKER_PASSWORD =" | sed 's/.*BROKER_PASSWORD = //' | tr -d '"'`"
+	rabbitmqctl add_user baruwa $PASSWD >> /dev/null
+	rabbitmqctl add_vhost baruwa  >> /dev/null
+	rabbitmqctl set_permissions -p baruwa baruwa ".*" ".*" ".*" >> /dev/null
+	rabbitmqctl delete_user guest >> /dev/null
+	
 	echo "Settings changed.."
 	pause	
 }
