@@ -20,8 +20,11 @@ E.F.A is born out of a need for a cost-effective email virus & spam scanning sol
 
 We try to create a complete package using existing open-source anti-spam projects and combine them to a single easy to use (virtual) appliance.
 
-Current available version: 0.2
-Current development version: 0.3
+Current available version: 0.3
+Current development version: 0.4
+#------------------------------------------#
+# Changes in 0.4
+- Fixed hostname change.
 
 #------------------------------------------#
 # Changes in 0.3
