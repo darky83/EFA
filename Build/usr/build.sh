@@ -350,7 +350,7 @@ echo "42 * * * * /usr/sbin/update_virus_scanners >> /dev/null" >> /etc/cron.d/ef
 echo "EFA-$VERSION" >> /etc/EFA-version
 cd /usr/local/sbin
 wget http://www.efa-project.org/build/$VERSION/usr/local/sbin/EFA-Init
-chmod 700 EFA-init
+chmod 700 EFA-Init
 wget http://www.efa-project.org/build/$VERSION/usr/local/sbin/EFA-Configure
 chmod 700 EFA-Configure
 wget http://www.efa-project.org/build/$VERSION/usr/local/sbin/EFA-Update
