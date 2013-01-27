@@ -1,8 +1,8 @@
 #!/bin/bash
 # +--------------------------------------------------------------------+
-# EFA build script v 0.3-20130103
+# EFA build script version 20130127
 # +--------------------------------------------------------------------+
-# Copyright (C) 2012  http://www.efa-project.org
+# Copyright (C) 2012~2013  http://www.efa-project.org
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -42,7 +42,7 @@
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++
 # STAGE 1 System setup
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++
-VERSION="0.3"
+VERSION="0.4"
 
 # Apt settings for noexec /tmp dir
 echo 'DPkg:Pre-Invoke{"mount -o remount,exec /tmp";};' >> /etc/apt/apt.conf

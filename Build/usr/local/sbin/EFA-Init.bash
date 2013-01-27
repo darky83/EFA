@@ -1,9 +1,9 @@
 #!/bin/bash
 # +--------------------------------------------------------------------+
 # EFA-Init
-# V0.1-20121125
+# Version 20130127
 # +--------------------------------------------------------------------+
-# Copyright (C) 2012  http://www.efa-project.org
+# Copyright (C) 2012~2013  http://www.efa-project.org
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
