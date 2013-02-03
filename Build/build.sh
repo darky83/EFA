@@ -411,6 +411,8 @@ echo "iface lo inet loopback" >> /etc/network/interfaces
 echo " " >> /etc/network/interfaces
 echo "nameserver 8.8.8.8" > /etc/resolv.conf
 echo "127.0.0.1               localhost efa02" > /etc/hosts
+rm /home/efaadmin/.bash_history
+rm /root/.bash_history
 # +---------------------------------------------------+
 
 # +---------------------------------------------------+
