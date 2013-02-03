@@ -1,6 +1,6 @@
 #!/bin/bash
 # +--------------------------------------------------------------------+
-# EFA build script version 20130127
+# EFA build script version 20130203
 # +--------------------------------------------------------------------+
 # Copyright (C) 2012~2013  http://www.efa-project.org
 #
@@ -330,6 +330,8 @@ chmod 755 /etc/init.d/DCC
 # Configure apache
 a2dissite 000-default
 sed -i '/ServerName /d' /etc/apache2/sites-enabled/baruwa
+sed -i '/WSGIPythonWarnings /d' /etc/apache2/sites-enabled/baruwa
+
 # +---------------------------------------------------+
 
 # +---------------------------------------------------+
