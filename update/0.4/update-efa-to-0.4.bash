@@ -1,7 +1,7 @@
 #!/bin/bash
 # +---------------------------------------------------+
 # EFA 0.4 update script
-# version 20130127
+# version 20130405
 # +--------------------------------------------------------------------+
 # Copyright (C) 2012~2013  http://www.efa-project.org
 #
@@ -67,7 +67,7 @@ echo "[EFA] Updating E.F.A specific files"
 # Update EFA-Init file
 cd /usr/local/sbin
 mv /usr/local/sbin/EFA-Init /var/EFA/update/0.4/backup/
-wget http://www.efa-project.org/build/0.3/usr/local/sbin/EFA-Init
+wget http://www.efa-project.org/build/0.4/usr/local/sbin/EFA-Init
 chmod 700 EFA-Init
 
 # Update EFA-Configure file
@@ -86,8 +86,20 @@ chmod 700 EFA-Update
 # +---------------------------------------------------+
 echo "[EFA] Updating baruwa configuration"
 
+# Fix postmaster account domain
+DOMAINNAME="`cat /etc/mailname | sed -n 's/[^.]*\.//p'`"
+sed -i "/^DEFAULT_FROM_EMAIL = / c\DEFAULT_FROM_EMAIL = 'postmaster@$DOMAINNAME' " /etc/baruwa/settings.py
+
 mkdir -p /etc/MailScanner/signatures/domains/text
 mkdir -p /etc/MailScanner/signatures/domains/html
+# +---------------------------------------------------+
+
+# +---------------------------------------------------+
+echo "[EFA] Install 3.2 kernel from backports for hyper-v support"
+echo "deb http://backports.debian.org/debian-backports squeeze-backports main" > /etc/apt/sources.list.d/backports.list
+apt-get update
+export APT_LISTCHANGES_FRONTEND=none
+apt-get -y -t squeeze-backports install linux-headers-3.2.0-0.bpo.4-686-pae linux-image-3.2.0-0.bpo.4-686-pae
 # +---------------------------------------------------+
 
 # +---------------------------------------------------+
@@ -100,6 +112,6 @@ echo "EFA-0.4" > /etc/EFA-version
 # +---------------------------------------------------+
 echo "[EFA] Your system is updated rebooting."
 
-#sleep 10
-#reboot
+sleep 10
+reboot
 # +---------------------------------------------------+

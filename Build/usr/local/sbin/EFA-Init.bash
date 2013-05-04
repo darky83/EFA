@@ -1,7 +1,7 @@
 #!/bin/bash
 # +--------------------------------------------------------------------+
 # EFA-Init
-# Version 20130127
+# Version 20130504
 # +--------------------------------------------------------------------+
 # Copyright (C) 2012~2013  http://www.efa-project.org
 #
@@ -223,7 +223,7 @@ function FUNCTION-WRITE-SETTINGS()
   postmap /etc/postfix/virtual
 
   echo "- Setting baruwa configuration"
-  sed -i "/^#DEFAULT_FROM_EMAIL = / c\DEFAULT_FROM_EMAIL = 'postmaster@$DOMAINNAME' " /etc/baruwa/settings.py
+  sed -i "/^DEFAULT_FROM_EMAIL = / c\DEFAULT_FROM_EMAIL = 'postmaster@$DOMAINNAME' " /etc/baruwa/settings.py
   sed -i "/^QUARANTINE_REPORT_HOSTURL = / c\QUARANTINE_REPORT_HOSTURL = 'http://`ifconfig eth0|grep "inet addr:"|awk '{print $2}'|awk -F : '{print $2}'`' " /etc/baruwa/settings.py
 
   echo "- Configuring razor"

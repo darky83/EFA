@@ -1,7 +1,7 @@
 #!/bin/bash
 # +--------------------------------------------------------------------+
 # EFA Project update script 
-# Version 20130127
+# Version 20130504
 # +--------------------------------------------------------------------+
 # Copyright (C) 2012~2013  http://www.efa-project.org
 #
@@ -24,7 +24,7 @@ action="$1"
 #----------------------------------------------------------------#
 # Variables
 #----------------------------------------------------------------#
-MIRROR1="http://www.efa-project.org"
+MIRROR="http://www.efa-project.org"
 VERSIONFILE="/etc/EFA-version"
 ADMINEMAIL="`cat /etc/EFA-Configured | sed 's/.*ADMINEMAIL://'`"
 MAILFROM="$ADMINEMAIL"
@@ -52,7 +52,7 @@ function start_update()
         then 
           rm /var/EFA/update/EFA-update-script
       fi
-      wget -q $MIRROR1/update/EFA-update-script
+      wget -q $MIRROR/update/EFA-update-script
       chmod 700 EFA-update-script
       /var/EFA/update/EFA-update-script
   fi
@@ -65,7 +65,7 @@ function start_update()
 function check_update()
 {
   CVERSION="`cat $VERSIONFILE`"
-  echo "[EFA] Getting latest version number from $MIRROR1"
+  echo "[EFA] Getting latest version number from $MIRROR"
   get_version
   if [ "$CVERSION" == "$LVERSION" ]
     then
@@ -85,7 +85,7 @@ function check_update()
 function cron_check()
 {
   CVERSION="`cat $VERSIONFILE`"
-  get-version
+  get_version
   if [ "$CVERSION" == "$LVERSION" ]
     then
       echo "From: $MAILFROM" > $TMPMAIL
@@ -117,7 +117,7 @@ function get_version()
       rm /tmp/EFA-version
   fi
 
-  wget -q $MIRROR1/update/EFA-version
+  wget -q $MIRROR/update/EFA-version
   if [ -f /tmp/EFA-version ]
     then
       LVERSION="`head -1 /tmp/EFA-version`" 

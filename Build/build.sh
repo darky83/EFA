@@ -1,6 +1,6 @@
 #!/bin/bash
 # +--------------------------------------------------------------------+
-# EFA build script version 20130203
+# EFA build script version 20130504
 # +--------------------------------------------------------------------+
 # Copyright (C) 2012~2013  http://www.efa-project.org
 #
@@ -60,13 +60,19 @@ update-rc.d -f portmap remove
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 # +---------------------------------------------------+
-# Install needed packages
+echo "[EFA] Install 3.2 kernel from backports for hyper-v support"
+echo "deb http://backports.debian.org/debian-backports squeeze-backports main" > /etc/apt/sources.list.d/backports.list
 apt-get update
-#export DEBIAN_FRONTEND=noninteractive
+export APT_LISTCHANGES_FRONTEND=none
+apt-get -y -t squeeze-backports install linux-headers-3.2.0-0.bpo.4-686-pae linux-image-3.2.0-0.bpo.4-686-pae
+# +---------------------------------------------------+
+
+# +---------------------------------------------------+
+# Install needed packages
 echo "mysql-server-5.1 mysql-server/root_password_again password password" | debconf-set-selections
 echo "mysql-server-5.1 mysql-server/root_password password password" | debconf-set-selections
 echo "postfix postfix/main_mailer_type select Internet Site" | debconf-set-selections
-echo "postfix postfix/mailname string efa03.efa-project.org" | debconf-set-selections
+echo "postfix postfix/mailname string efa.efa-project.org" | debconf-set-selections
 
 
 apt-get -q -y install unrar-free vim screen htop ssh ntp mysql-server-5.1 apache2 postfix postfix-mysql rabbitmq-server pyzor razor sudo postfix-policyd-spf-perl

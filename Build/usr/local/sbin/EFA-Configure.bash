@@ -1,7 +1,7 @@
 #!/bin/bash
 # +--------------------------------------------------------------------+
 # EFA-Configure
-# Version 20130127
+# Version 20130504
 # +--------------------------------------------------------------------+
 # Copyright (C) 2012~2013  http://www.efa-project.org
 #
@@ -247,7 +247,7 @@ func_sethnsettings(){
 	postconf -e mydestination="$HOSTNAME.$DOMAINNAME, localhost.$DOMAINNAME, localhost"
 	
 	# Change baruwa from email address.
-	sed -i "/^#DEFAULT_FROM_EMAIL = / c\DEFAULT_FROM_EMAIL = 'postmaster@$DOMAINNAME' " /etc/baruwa/settings.py
+	sed -i "/^DEFAULT_FROM_EMAIL = / c\DEFAULT_FROM_EMAIL = 'postmaster@$DOMAINNAME' " /etc/baruwa/settings.py
 	
 	# Start services
 	/etc/init.d/rabbitmq-server start >> /dev/null
