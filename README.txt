@@ -25,6 +25,9 @@ Current development version: 0.4
 #------------------------------------------#
 # Changes in 0.4
 - Fixed hostname change.
+- Kernel 3.2.0 from backports for hyper-v support
+- Fixed EFA-Update get_version bug
+- Fixed baruwa DEFAULT_MAIL_FROM configuration value
 
 #------------------------------------------#
 # Changes in 0.3
