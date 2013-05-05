@@ -1,6 +1,6 @@
 #!/bin/bash
 # +--------------------------------------------------------------------+
-# EFA build script version 20130504
+# EFA build script version 20130505
 # +--------------------------------------------------------------------+
 # Copyright (C) 2012~2013  http://www.efa-project.org
 #
@@ -60,22 +60,15 @@ update-rc.d -f portmap remove
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 # +---------------------------------------------------+
-echo "[EFA] Install 3.2 kernel from backports for hyper-v support"
-echo "deb http://backports.debian.org/debian-backports squeeze-backports main" > /etc/apt/sources.list.d/backports.list
-apt-get update
-export APT_LISTCHANGES_FRONTEND=none
-apt-get -y -t squeeze-backports install linux-headers-3.2.0-0.bpo.4-686-pae linux-image-3.2.0-0.bpo.4-686-pae
-# +---------------------------------------------------+
-
-# +---------------------------------------------------+
 # Install needed packages
-echo "mysql-server-5.1 mysql-server/root_password_again password password" | debconf-set-selections
-echo "mysql-server-5.1 mysql-server/root_password password password" | debconf-set-selections
+apt-get update
+echo "mysql-server-5.5 mysql-server/root_password_again password password" | debconf-set-selections
+echo "mysql-server-5.5 mysql-server/root_password password password" | debconf-set-selections
 echo "postfix postfix/main_mailer_type select Internet Site" | debconf-set-selections
 echo "postfix postfix/mailname string efa.efa-project.org" | debconf-set-selections
 
 
-apt-get -q -y install unrar-free vim screen htop ssh ntp mysql-server-5.1 apache2 postfix postfix-mysql rabbitmq-server pyzor razor sudo postfix-policyd-spf-perl
+apt-get -q -y install unrar-free vim screen htop ssh ntp mysql-server-5.5 apache2 postfix postfix-mysql rabbitmq-server pyzor razor sudo postfix-policyd-spf-perl
 dpkg --purge exim4 exim4-base exim4-config exim4-daemon-light
 apt-get -q -y remove popularity-contest
 # +---------------------------------------------------+
@@ -94,7 +87,7 @@ rabbitmqctl delete_user guest
 # +---------------------------------------------------+
 # Install baruwa
 wget -O - http://apt.baruwa.org/baruwa-apt-keys.gpg | apt-key add -
-echo "deb http://apt.baruwa.org/debian squeeze main" >> /etc/apt/sources.list.d/baruwa.list
+echo "deb http://apt.baruwa.org/debian wheezy main" >> /etc/apt/sources.list.d/baruwa.list
 apt-get update
 # Configure MySQL: yes
 
@@ -122,6 +115,8 @@ baruwa-admin syncdb --noinput
 for name in $(echo "accounts messages lists reports status fixups config"); do
  baruwa-admin migrate $name;
 done
+baruwa-admin migrate djcelery
+
 
 mkdir -p /etc/MailScanner/signatures/domains/text
 mkdir -p /etc/MailScanner/signatures/domains/html
@@ -139,6 +134,7 @@ chmod -R 775 /var/spool/MailScanner
 
 # +---------------------------------------------------+
 # Configure MailScanner
+mkdir /var/lock/subsys
 cp /etc/MailScanner/MailScanner.conf /etc/MailScanner/MailScanner.conf.dist
 sed -i '/^Run As User/ c\Run As User = postfix' /etc/MailScanner/MailScanner.conf
 sed -i '/^Run As Group/ c\Run As Group = postfix' /etc/MailScanner/MailScanner.conf
@@ -303,7 +299,7 @@ sed -i "/^#DEFAULT_FROM_EMAIL = / c\DEFAULT_FROM_EMAIL = 'postmaster@efa-project
 sed -i "/^QUARANTINE_REPORT_HOSTURL = / c\QUARANTINE_REPORT_HOSTURL = 'http://`ifconfig eth0|grep "inet addr:"|awk '{print $2}'|awk -F : '{print $2}'`' " /etc/baruwa/settings.py
 update-rc.d baruwa defaults
 # Don't start yet we do this after config
-rm /etc/rc2.d/S17baruwa 
+update-rc.d baruwa remove
 # +---------------------------------------------------+
 
 # +---------------------------------------------------+
