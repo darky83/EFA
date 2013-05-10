@@ -361,6 +361,7 @@ wget http://www.efa-project.org/build/$VERSION/usr/local/sbin/EFA-Update
 chmod 700 EFA-Update
 mkdir /var/EFA
 mkdir /var/EFA/update
+mkdir /etc/network/interfaces.d
 
 echo "" >> /etc/issue
 echo "--------------------------" >> /etc/issue
@@ -413,8 +414,9 @@ rm /var/cache/apt/archives/*
 echo "auto lo" > /etc/network/interfaces
 echo "iface lo inet loopback" >> /etc/network/interfaces
 echo " " >> /etc/network/interfaces
+echo "source /etc/network/interfaces.d/*"
 echo "nameserver 8.8.8.8" > /etc/resolv.conf
-echo "127.0.0.1               localhost efa02" > /etc/hosts
+echo "127.0.0.1               localhost efa" > /etc/hosts
 rm /home/efaadmin/.bash_history
 rm /root/.bash_history
 # +---------------------------------------------------+
