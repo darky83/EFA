@@ -196,17 +196,6 @@ function FUNCTION-START-CONFIG()
 # +---------------------------------------------------+
 function FUNCTION-WRITE-SETTINGS()
 {
-
-#echo "INTERFACE = $INTERFACE"
-#echo "IPADDRESS = $IPADDRESS"
-#echo "NETMASK = $NETMASK"
-#echo "GATEWAY = $GATEWAY"
-#echo "DNS1 = $DNS1"
-#echo "DNS2 = $DNS2"
-#echo "HOSTNAME = $HOSTNAME"
-#echo "DOMAINNAME = $DOMAINNAME"
-#echo "ADMINEMAIL = $ADMINEMAIL"
-
   /etc/init.d/rabbitmq-server stop
   echo "EFA: - Setting new hostname"
   echo $HOSTNAME > /etc/hostname

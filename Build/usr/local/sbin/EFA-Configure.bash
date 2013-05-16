@@ -32,11 +32,16 @@ opt_ip-settings(){
 	while [ $ipmenu == "1" ]
 		do
 			func_getipsettings
+			IP="`cat /etc/network/interfaces.d/$INTERFACE | grep address | awk {' print $2 '}`"
+			NM="`cat /etc/network/interfaces.d/$INTERFACE | grep netmask | awk {' print $2 '}`"
+			GW="`cat /etc/network/interfaces.d/$INTERFACE | grep gateway | awk {' print $2 '}`"
+			DNS1="`cat /etc/resolv.conf  | grep nameserver | awk 'NR==1 {print $2}'`"
+			DNS2="`cat /etc/resolv.conf  | grep nameserver | awk 'NR==2 {print $2}'`"
 			clear         
 			echo "----------------- E.F.A -----------------"
 			echo "-------------- IP SETTINGS --------------"
 			echo " "
-			echo "Current IP settings are:"
+			echo "Current IP settings for $INTERFACE are:"
 			echo "1) IP:			$IP"
 			echo "2) Netmask:		$NM"
 			echo "3) Gateway:		$GW"
@@ -54,31 +59,31 @@ opt_ip-settings(){
 					echo ""
 					read -p "Enter your new IP: " IP
 					func_setipsettings
-					ipmenu=1
+					menu=1
 					;;
 				2)  ipmenu=0
 					echo ""
 					read -p "Enter your new netmask: " NM
 					func_setipsettings
-					ipmenu=1
+					menu=1
 					;;
 				3)  ipmenu=0
 					echo ""
 					read -p "Enter your new gateway: " GW
 					func_setipsettings
-					ipmenu=1
+					menu=1
 					;;
 				4) 	ipmenu=0
 					echo ""
 					read -p "Enter your new primary DNS: " DNS1
 					func_setipsettings
-					ipmenu=1
+					menu=1
 					;;
 				5) 	ipmenu=0
 					echo ""
 					read -p "Enter your new secondary DNS: " DNS2
 					func_setipsettings
-					ipmenu=1
+					menu=1
 					;;
 				e) menu=1 && return ;;
 				*) echo -e "Error \"$choice\" is not an option..." && sleep 2
@@ -91,11 +96,52 @@ opt_ip-settings(){
 # Function to grab the current IP settings.
 # +---------------------------------------------------+
 function func_getipsettings(){
-	IP="`cat /etc/network/interfaces | grep address | awk {' print $2 '}`"
-	NM="`cat /etc/network/interfaces | grep netmask | awk {' print $2 '}`"
-	GW="`cat /etc/network/interfaces | grep gateway | awk {' print $2 '}`"
-	DNS1="`cat /etc/resolv.conf  | grep nameserver | awk 'NR==1 {print $2}'`"
-	DNS2="`cat /etc/resolv.conf  | grep nameserver | awk 'NR==2 {print $2}'`"
+
+	nrintf=`cat /proc/net/dev | grep eth | awk {' print $1 '} | sed 's/://g' | wc -l`
+	interf=`cat /proc/net/dev | grep eth | awk {' print $1 '} | sed 's/://g'`
+
+	if [ $nrintf -gt 1 ]
+	 then
+		clear         
+		echo "----------------- E.F.A -----------------"
+		echo "-------------- IP SETTINGS --------------"
+		echo " "
+		echo "You seem to have multiple network interfaces"
+		echo "Please select the interface you want to configure"
+		echo "The interface names on your machine are:"
+		for int in $interf
+			do
+				echo " - $int"
+			done
+
+        local choice
+        read -p "Enter the primary interface name: " choice
+        choice_check=0
+        for int in $interf
+         do
+          if [ $int == $choice ]
+           then
+            choice_check=1
+           fi
+         done
+
+         # Check if the user typed a interface that exists.
+         if [ $choice_check -eq 0 ]
+          then
+            echo "ERROR, That interface does not exist."
+            sleep 2
+            func_getipsettings
+            return
+          fi
+
+        if [ $choice_check -eq 1 ]
+         then
+          INTERFACE=$choice
+        fi
+
+  else
+        INTERFACE=$interf
+fi
 }
 # +---------------------------------------------------+
 
@@ -142,15 +188,20 @@ func_setipsettings(){
 	
 	/etc/init.d/networking stop >> /dev/null
 	# Edit interfaces
-	echo "auto lo" > /etc/network/interfaces
-	echo "iface lo inet loopback" >> /etc/network/interfaces
-	echo " " >> /etc/network/interfaces
-	echo "auto eth0" >> /etc/network/interfaces
-	echo "iface eth0 inet static" >> /etc/network/interfaces
-	echo "        address $IP" >> /etc/network/interfaces
-	echo "        netmask $NM" >> /etc/network/interfaces
-	echo "        gateway $GW" >> /etc/network/interfaces
-	echo "        dns-nameservers $DNS1 $DNS2" >> /etc/network/interfaces
+	echo "auto $INTERFACE" > /etc/network/interfaces.d/$INTERFACE
+	echo "iface $INTERFACE inet static" >> /etc/network/interfaces.d/$INTERFACE
+	if [ -n "$IP" ]; then
+		echo "        address $IP" >> /etc/network/interfaces.d/$INTERFACE
+	fi
+	if [ -n "$NM" ]; then
+		echo "        netmask $NM" >> /etc/network/interfaces.d/$INTERFACE
+	fi
+	if [ -n "$GW" ]; then
+		echo "        gateway $GW" >> /etc/network/interfaces.d/$INTERFACE
+	fi
+	if [ -n "$DNS1" ]; then
+		echo "        dns-nameservers $DNS1 $DNS2" >> /etc/network/interfaces.d/$INTERFACE
+	fi
 	
 	echo ""
 	/etc/init.d/networking start
