@@ -21,6 +21,7 @@
 # TODO
 # - FIX SIGNATURES
 # - FIX QUESTION FROM MYSQL CONFIGURATION IN BARUWA UPDATE.
+# - DCC upgrade
 # +---------------------------------------------------+
 
 # +---------------------------------------------------+

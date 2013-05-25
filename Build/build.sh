@@ -134,7 +134,7 @@ chmod -R 775 /var/spool/MailScanner
 
 # +---------------------------------------------------+
 # Configure MailScanner
-mkdir /var/lock/subsys
+mkdir -p /var/lock/subsys
 cp /etc/MailScanner/MailScanner.conf /etc/MailScanner/MailScanner.conf.dist
 sed -i '/^Run As User/ c\Run As User = postfix' /etc/MailScanner/MailScanner.conf
 sed -i '/^Run As Group/ c\Run As Group = postfix' /etc/MailScanner/MailScanner.conf
@@ -414,7 +414,7 @@ rm /var/cache/apt/archives/*
 echo "auto lo" > /etc/network/interfaces
 echo "iface lo inet loopback" >> /etc/network/interfaces
 echo " " >> /etc/network/interfaces
-echo "source /etc/network/interfaces.d/*"
+echo "source /etc/network/interfaces.d/*" >> /etc/network/interfaces
 echo "nameserver 8.8.8.8" > /etc/resolv.conf
 echo "127.0.0.1               localhost efa" > /etc/hosts
 rm /home/efaadmin/.bash_history
