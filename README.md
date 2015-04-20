@@ -10,7 +10,9 @@ We try to create a complete package using existing open-source anti-spam project
 For more information go to http://www.efa-project.org
 
 Current available version: 0.3
-Current development version: 0.4
+Current development version: see https://github.com/E-F-A
+
+Latest development is done on the https://github.com/E-F-A repository
 #------------------------------------------#
 # Changes in 0.4
 - Fixed hostname change.
@@ -27,7 +29,7 @@ Current development version: 0.4
 - EFA-Configure is moved to EFA-Init (to be run once for initial config)
 - apt-get questions pre-answered during install.
 - New EFA-Configure script to modify the system after initial config and to configure new features.
-- - Option to change IP 
+- - Option to change IP
 - - Option to change hostname
 - - Option to enable relaying for specific hosts (internal LAN for example)
 - - Option to enable outgoing smarthost
